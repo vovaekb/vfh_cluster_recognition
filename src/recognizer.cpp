@@ -520,7 +520,11 @@ void recognize(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<PointT>::Ptr
     //
 
     // Sort matches
-    std::sort(models_scores.begin(), models_scores.end(), sortIndexScoresOp);
+    std::sort(models_scores.begin(), models_scores.end(),
+              [](const index_score &d1, const index_score &d2)
+              {
+                  return d1.score < d2.score
+              });
 
     std::cout << "Best model candidates:\n";
     for (auto &model_score : models_scores)
@@ -577,7 +581,11 @@ void recognize(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<PointT>::Ptr
         //        }
 
         // Method 2
-        std::sort(models_scores.begin(), models_scores.end(), sortIndexScoresOp);
+        std::sort(models_scores.begin(), models_scores.end(),
+                  [](const index_score &d1, const index_score &d2)
+                  {
+                      return d1.score < d2.score
+                  });
 
         for (auto &model_score : models_scores)
         {
