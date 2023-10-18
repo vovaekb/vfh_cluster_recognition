@@ -316,7 +316,7 @@ void segmentScene(pcl::PointCloud<PointT>::Ptr &input)
 
             //            cout << "[segmentScene] Cluster " << ind << " has size: " << cloud->points.size() << "\n";
 
-            cluster_clouds.push_back(cloud);
+            cluster_clouds.emplace(cluster_clouds.end(), cloud);
             ind++;
         }
     }
