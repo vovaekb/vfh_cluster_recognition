@@ -19,6 +19,7 @@ add_definitions(${PCL_DEFINITIONS})
 #    "src/recognize_testing.cpp"
 #)
 
+add_library(feature_cloud src/feature_cloud.cpp)
 add_library(recognizer src/recognizer.cpp)
 add_library(test_runner src/test_runner.cpp)
 
@@ -36,21 +37,48 @@ if(HDF5_FOUND)
   add_executable(view_preprocess src/view_preprocess.cpp)
 
 
-  target_link_libraries(build_tree ${PCL_LIBRARIES} ${Boost_LIBRARIES}
-                                 ${FLANN_LIBRARIES} ${HDF5_hdf5_LIBRARY})
+  target_link_libraries(build_tree 
+    ${PCL_LIBRARIES} 
+    ${Boost_LIBRARIES}
+    ${FLANN_LIBRARIES} 
+    ${HDF5_hdf5_LIBRARY}
+  )
 
-  target_link_libraries(nearest_neighbors ${PCL_LIBRARIES}
-                                        ${Boost_LIBRARIES} ${FLANN_LIBRARIES} ${HDF5_hdf5_LIBRARY}
-                                        )
+  target_link_libraries(nearest_neighbors
+    ${PCL_LIBRARIES}
+    ${Boost_LIBRARIES} 
+    ${FLANN_LIBRARIES} 
+    ${HDF5_hdf5_LIBRARY}
+  )
 
-  target_link_libraries(recognizer ${PCL_LIBRARIES} ${Boost_LIBRARIES}
-                                 ${FLANN_LIBRARIES} ${HDF5_hdf5_LIBRARY})
+  target_link_libraries(feature_cloud
+    ${catkin_LIBRARIES}
+  )
 
-  target_link_libraries(test_runner ${PCL_LIBRARIES} ${Boost_LIBRARIES}
-                                  recognizer)
+  target_link_libraries(recognizer
+    ${PCL_LIBRARIES} 
+    ${Boost_LIBRARIES}
+    ${FLANN_LIBRARIES} 
+    ${HDF5_hdf5_LIBRARY} 
+    feature_cloud
+  )
 
-  target_link_libraries(recognize_testing ${PCL_LIBRARIES} ${Boost_LIBRARIES}
-                                 ${FLANN_LIBRARIES} ${HDF5_hdf5_LIBRARY} recognizer test_runner)
+  target_link_libraries(test_runner 
+    ${PCL_LIBRARIES} 
+    ${Boost_LIBRARIES}
+    recognizer
+  )
 
-  target_link_libraries(view_preprocess ${PCL_LIBRARIES})
+  target_link_libraries(recognize_testing 
+    ${PCL_LIBRARIES} 
+    ${Boost_LIBRARIES}
+    ${FLANN_LIBRARIES} 
+    ${HDF5_hdf5_LIBRARY} 
+    recognizer test_runner
+  )
+
+  target_link_libraries(
+    view_preprocess 
+    ${PCL_LIBRARIES}
+  )
 endif(HDF5_FOUND)
