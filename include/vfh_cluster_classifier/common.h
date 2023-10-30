@@ -10,8 +10,19 @@
 using namespace std;
 
 // types definition
-typedef pcl::PointXYZRGB PointT;
-typedef pcl::VFHSignature308 FeatureT;
+typedef pcl::PointXYZRGB PointType;
+typedef pcl::PointXYZ DepthPointType;
+typedef pcl::Normal NormalType;
+typedef pcl::PointCloud<PointType> PointCloudType;
+typedef pcl::PointCloud<DepthPointType> DepthPointCloudType;
+typedef pcl::PointCloud<NormalType> NormalCloudType;
+typedef PointCloudType::Ptr PointCloudTypePtr;
+typedef DepthPointCloudType::Ptr DepthPointCloudTypePtr;
+typedef PointCloudType::ConstPtr PointTConstPtr;
+typedef pcl::VFHSignature308 FeatureType;
+typedef pcl::PointCloud<FeatureType> FeatureCloudType;
+typedef FeatureCloudType::Ptr FeatureCloudTypePtr;
+typedef NormalCloudType::Ptr NormalCloudTypePtr;
 typedef std::pair<std::string, std::vector<float>> vfh_model;
 
 extern string base_descr_dir;
@@ -30,7 +41,7 @@ extern string test_scenes_dir;
 extern string test_scene;
 extern string scene_name;
 
-extern std::list<pcl::PointCloud<PointT>::Ptr> cluster_clouds;
+extern std::list<PointCloudTypePtr> cluster_clouds;
 extern std::list<std::string> recognized_objects;
 extern string found_model;
 

@@ -21,10 +21,12 @@ bool calculate_crh(false);
 bool calculate_vfh(false);
 
 typedef std::pair<std::string, std::vector<float>> vfh_model;
-typedef pcl::Normal NormalT;
-typedef pcl::PointXYZRGB PointT;
-typedef pcl::PointCloud<PointT>::ConstPtr PointTConstPtr;
-typedef pcl::VFHSignature308 FeatureT;
+typedef pcl::Normal NormalType;
+typedef pcl::PointXYZRGB PointType;
+typedef pcl::PointCloud<PointType> PointCloudType;
+typedef PointCloudType::Ptr PointCloudTypePtr;
+typedef PointCloudType::ConstPtr PointTConstPtr;
+typedef pcl::VFHSignature308 FeatureType;
 typedef pcl::Histogram<90> CRH90;
 
 #ifndef DISABLE_COMPUTING_CRH
@@ -72,7 +74,7 @@ bool loadHist(const boost::filesystem::path &path, vfh_model &vfh)
     }
 
     // Load the PCD file into a point cloud
-    pcl::PointCloud<pcl::VFHSignature308> point;
+    FeatureCloudType point;
     pcl::io::loadPCDFile(path.string(), point);
     vfh.second.resize(308);
 
@@ -116,17 +118,17 @@ void loadFeatureModels(const boost::filesystem::path &base_dir, const std::strin
     }
 }
 
-void processCloud(pcl::PointCloud<PointT>::Ptr &in, pcl::PointCloud<PointT>::Ptr &out)
+void processCloud(PointCloudTypePtr &in, PointCloudTypePtr &out)
 {
     vector<int> mapping;
     pcl::removeNaNFromPointCloud(*in, *in, mapping);
 
     // Downsampling
-    pcl::VoxelGrid<PointT> vox_grid;
+    pcl::VoxelGrid<PointType> vox_grid;
     vox_grid.setInputCloud(in);
     vox_grid.setLeafSize(voxel_leaf_size, voxel_leaf_size, voxel_leaf_size);
 
-    pcl::PointCloud<PointT>::Ptr temp_cloud(new pcl::PointCloud<PointT>());
+    PointCloudTypePtr temp_cloud(new PointCloudType());
     vox_grid.filter(*temp_cloud);
 
     out = temp_cloud;
@@ -165,7 +167,7 @@ void createFeatureModels(const boost::filesystem::path &base_dir, const std::str
 
             if (!boost::filesystem::exists(descr_file))
             {
-                pcl::PointCloud<PointT>::Ptr view(new pcl::PointCloud<PointT>());
+                PointCloudTypePtr view(new PointCloudType());
 
                 string full_file_name = it->path().string(); // (base_dir / it->path ().filename ()).string();
                 //          string file_name = (it->path ().filename ()).string();
@@ -181,15 +183,15 @@ void createFeatureModels(const boost::filesystem::path &base_dir, const std::str
 
                 cout << "Cloud has " << view->points.size() << " points after processing\n";
 
-                pcl::PointCloud<NormalT>::Ptr normals(new pcl::PointCloud<NormalT>());
-                pcl::PointCloud<FeatureT>::Ptr descriptor(new pcl::PointCloud<FeatureT>);
+                NormalCloudTypePtr normals(new NormalCloudType());
+                FeatureCloudTypePtr descriptor(new FeatureCloudType);
 
                 // Estimate the normals.
-                pcl::NormalEstimation<PointT, NormalT> normalEstimation;
+                pcl::NormalEstimation<PointType, NormalType> normalEstimation;
                 normalEstimation.setInputCloud(view);
 
                 normalEstimation.setRadiusSearch(normal_radius);
-                pcl::search::KdTree<PointT>::Ptr kdtree(new pcl::search::KdTree<PointT>);
+                pcl::search::KdTree<PointType>::Ptr kdtree(new pcl::search::KdTree<PointType>);
                 normalEstimation.setSearchMethod(kdtree);
 
                 // Alternative from local pipeline
@@ -198,7 +200,7 @@ void createFeatureModels(const boost::filesystem::path &base_dir, const std::str
                 normalEstimation.compute(*normals);
 
                 // VFH estimation object.
-                pcl::VFHEstimation<PointT, NormalT, FeatureT> vfh;
+                pcl::VFHEstimation<PointType, NormalType, FeatureType> vfh;
                 vfh.setInputCloud(view);
                 vfh.setInputNormals(normals);
                 vfh.setSearchMethod(kdtree);
@@ -224,7 +226,7 @@ void createFeatureModels(const boost::filesystem::path &base_dir, const std::str
                     pcl::PointCloud<CRH90>::Ptr histogram(new pcl::PointCloud<CRH90>);
 
                     // CRH estimation object
-                    pcl::CRHEstimation<PointT, NormalT, CRH90> crh;
+                    pcl::CRHEstimation<PointType, NormalType, CRH90> crh;
                     crh.setInputCloud(view);
                     crh.setInputNormals(normals);
                     Eigen::Vector4f centroid4f;

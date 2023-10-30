@@ -1,6 +1,6 @@
 // #define LOADING_MODELS_DEBUG
 // #define INCLUDE_RECOGNIZER_DEBUG
-#define REFACTOR_TESTING_DEBUG
+// #define REFACTOR_TESTING_DEBUG
 // #define DEBUG_SPECIFING_GT_FILE
 
 /*
@@ -49,9 +49,12 @@
 using namespace std;
 
 // types definition
-typedef pcl::PointXYZRGB PointT;
-typedef pcl::Normal NormalT;
-typedef pcl::VFHSignature308 FeatureT;
+typedef pcl::PointXYZRGB PointType;
+typedef pcl::PointCloud<PointType> PointCloudType;
+typedef PointCloudType::Ptr PointCloudTypePtr;
+typedef PointCloudType::ConstPtr PointTConstPtr;
+typedef pcl::Normal NormalType;
+typedef pcl::VFHSignature308 FeatureType;
 typedef std::pair<std::string, std::vector<float>> vfh_model;
 typedef pcl::Histogram<90> CRH90;
 
@@ -71,7 +74,7 @@ int nn_k = 3;     // 6
 int thresh = 195; // 180; // 60
 float distance_thresh;
 
-std::vector<pcl::PointCloud<PointT>::Ptr> cluster_clouds;
+std::vector<PointCloudTypePtr> cluster_clouds;
 std::vector<std::string> recognized_objects;
 string found_model("");
 
@@ -249,7 +252,7 @@ void runTests()
 
                     cout << "[runTests] Scene path: " << scene_pcd_path << "\n";
 
-                    pcl::PointCloud<PointT>::Ptr scene_cloud(new pcl::PointCloud<PointT>()), scene_cloud_filtered(new pcl::PointCloud<PointT>());
+                    PointCloudTypePtr scene_cloud(new PointCloudType()), scene_cloud_filtered(new PointCloudType());
 
                     pcl::io::loadPCDFile(scene_pcd_path.c_str(), *scene_cloud);
 
@@ -276,7 +279,7 @@ void runTests()
  */
 void recognizeScene()
 {
-    pcl::PointCloud<PointT>::Ptr scene_cloud(new pcl::PointCloud<PointT>()), scene_cloud_filtered(new pcl::PointCloud<PointT>());
+    PointCloudTypePtr scene_cloud(new PointCloudType()), scene_cloud_filtered(new PointCloudType());
 
     pcl::io::loadPCDFile(test_scene.c_str(), *scene_cloud);
 

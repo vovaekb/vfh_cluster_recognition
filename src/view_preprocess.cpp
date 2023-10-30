@@ -23,8 +23,8 @@ string output_path;
 bool perform_scaling(false);
 
 // Static parameters
-int clouds_number (42);
-float voxel_leaf_size_ (0.001);
+int clouds_number(42);
+float voxel_leaf_size_(0.001);
 
 // Containers for objects
 vector<PointCloudTypePtr> clouds;
@@ -33,15 +33,15 @@ vector<int> mapping;
 
 void process_cloud(PointCloudTypePtr &cloud, int index)
 {
-    if(perform_scaling)
+    if (perform_scaling)
     {
         // Scale cloud, ...
         cout << "Scale cloud\n";
         Eigen::Matrix4f cloud_transform = Eigen::Matrix4f::Identity();
 
-        cloud_transform(0,0) = 0.001;
-        cloud_transform(1,1) = 0.001;
-        cloud_transform(2,2) = 0.001;
+        cloud_transform(0, 0) = 0.001;
+        cloud_transform(1, 1) = 0.001;
+        cloud_transform(2, 2) = 0.001;
 
         pcl::transformPointCloud(*cloud, *cloud, cloud_transform);
     }
@@ -52,7 +52,7 @@ void process_cloud(PointCloudTypePtr &cloud, int index)
     voxel_grid.setInputCloud(cloud);
     voxel_grid.setLeafSize(voxel_leaf_size_, voxel_leaf_size_, voxel_leaf_size_);
 
-    PointCloudTypePtr temp_cloud (new pcl::PointCloud<PointType> ());
+    PointCloudTypePtr temp_cloud(new PointCloudType());
     voxel_grid.filter(*temp_cloud);
     cloud = temp_cloud;
 
@@ -70,17 +70,18 @@ void process_cloud(PointCloudTypePtr &cloud, int index)
 
 void process()
 {
-    if(!boost::filesystem::exists(output_path)) boost::filesystem::create_directory(output_path);
+    if (!boost::filesystem::exists(output_path))
+        boost::filesystem::create_directory(output_path);
 
     // Load point clouds
-    for(int i = 1; i <= clouds_number; i++)
+    for (int i = 1; i <= clouds_number; i++)
     {
         string pcd_path = samples_path + "/" + boost::to_string(i) + ".pcd";
 
-        if(boost::filesystem::exists(pcd_path))
+        if (boost::filesystem::exists(pcd_path))
         {
-            PointCloudTypePtr cloud (new pcl::PointCloud<PointType> ());
-            if(pcl::io::loadPCDFile(pcd_path, *cloud) != 0)
+            PointCloudTypePtr cloud(new PointCloudType());
+            if (pcl::io::loadPCDFile(pcd_path, *cloud) != 0)
             {
                 return;
             }
@@ -90,10 +91,9 @@ void process()
             process_cloud(cloud, i);
         }
     }
-
 }
 
-void showHelp(char* filename)
+void showHelp(char *filename)
 {
     cout << "\t\t ** process_cloud package **\n";
     cout << "Usage: " << filename << " --samples_path <samples_path> [options]\n";
@@ -104,9 +104,9 @@ void showHelp(char* filename)
     cout << "-scale                       perform scaling\n";
 }
 
-void parseCommandLine(int argc, char** argv)
+void parseCommandLine(int argc, char **argv)
 {
-    if(pcl::console::find_switch(argc, argv, "-h"))
+    if (pcl::console::find_switch(argc, argv, "-h"))
     {
         showHelp(argv[0]);
         exit(0);
@@ -114,7 +114,7 @@ void parseCommandLine(int argc, char** argv)
 
     pcl::console::parse_argument(argc, argv, "--samples_path", samples_path);
 
-    if(samples_path == "")
+    if (samples_path == "")
     {
         cout << "Samples directory missing!\n";
         showHelp(argv[0]);
@@ -123,12 +123,12 @@ void parseCommandLine(int argc, char** argv)
 
     pcl::console::parse_argument(argc, argv, "--output_path", output_path);
 
-    if(output_path == "")
+    if (output_path == "")
     {
         output_path = output_path + "_scaled";
     }
 
-    if(pcl::console::find_switch(argc, argv, "-scale"))
+    if (pcl::console::find_switch(argc, argv, "-scale"))
     {
         perform_scaling = true;
     }
@@ -136,12 +136,12 @@ void parseCommandLine(int argc, char** argv)
     pcl::console::parse_argument(argc, argv, "--clouds_n", clouds_number);
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     parseCommandLine(argc, argv);
 
-//    std::stringstream output_ss;
-//    output_ss << output_path << "/" << samples_path << "_output";
+    //    std::stringstream output_ss;
+    //    output_ss << output_path << "/" << samples_path << "_output";
 
     cout << "Samples dir: " << samples_path << "\n";
     cout << "Output path: " << output_path << "\n";
@@ -151,4 +151,3 @@ int main(int argc, char** argv)
     process();
     return 0;
 }
-

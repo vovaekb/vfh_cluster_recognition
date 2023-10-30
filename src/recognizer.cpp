@@ -47,7 +47,6 @@ std::vector<index_score> models_scores;
 vector<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis>> object_hypotheses_;
 
 flann::Index<flann::ChiSquareDistance<float>> *flann_index;
-sortIndexScores sortIndexScoresOp;
 
 bool loadFileList(vector<vfh_model> &models, const string &filename)
 {
@@ -93,7 +92,7 @@ void loadIndex()
     }
 }
 
-void createHist(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<FeatureT>::Ptr &descriptor, pcl::PointCloud<CRH90>::Ptr &crh_histogram, Eigen::Vector4f &centroid)
+void createHist(PointCloudTypePtr &cloud, FeatureCloudTypePtr &descriptor, pcl::PointCloud<CRH90>::Ptr &crh_histogram, Eigen::Vector4f &centroid)
 {
     cout << "Create VFH histogram...\n";
 
@@ -114,16 +113,16 @@ void createHist(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<FeatureT>::
     //    std::cout << "XYZ cloud has size: " << depth_cloud->points.size() << "\n";
 
     // Data structures
-    pcl::PointCloud<NormalT>::Ptr normals(new pcl::PointCloud<NormalT>);
+    NormalCloudTypePtr normals(new NormalCloudType);
 
     // Algorithm parameters
 
     // estimate normals
-    pcl::NormalEstimation<PointT, NormalT> normalEstimation;
+    pcl::NormalEstimation<PointType, NormalType> normalEstimation;
     normalEstimation.setInputCloud(cloud); // depth_cloud
 
     normalEstimation.setRadiusSearch(normal_radius);
-    pcl::search::KdTree<PointT>::Ptr kdtree(new pcl::search::KdTree<PointT>);
+    pcl::search::KdTree<PointType>::Ptr kdtree(new pcl::search::KdTree<PointType>);
     normalEstimation.setSearchMethod(kdtree);
 
     // Alternative from local pipeline
@@ -141,7 +140,7 @@ void createHist(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<FeatureT>::
     clock_t t_start = clock();
 #endif
     // calculate vfh
-    pcl::VFHEstimation<PointT, NormalT, FeatureT> vfh;
+    pcl::VFHEstimation<PointType, NormalType, FeatureType> vfh;
     vfh.setInputCloud(cloud); // depth_cloud
     vfh.setInputNormals(normals);
     vfh.setSearchMethod(kdtree);
@@ -179,7 +178,7 @@ void createHist(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<FeatureT>::
         pcl::PointCloud<CRH90>::Ptr crh_histogram(new pcl::PointCloud<CRH90>);
 
         // CRH estimation object
-        pcl::CRHEstimation<PointDT, NormalT, CRH90> crh;
+        pcl::CRHEstimation<PointDT, NormalType, CRH90> crh;
         crh.setInputCloud(depth_cloud); // cloud);
         crh.setInputNormals(normals);
 
@@ -216,7 +215,7 @@ nearestKSearch(flann::Index<flann::ChiSquareDistance<float>> &index, const vfh_m
     delete[] p.ptr();
 }
 
-void preprocessCloud(pcl::PointCloud<PointT>::Ptr &input, pcl::PointCloud<PointT>::Ptr &output)
+void preprocessCloud(PointCloudTypePtr &input, PointCloudTypePtr &output)
 {
     cout << "Preprocess cloud ...\n";
     //    cout << "Input cloud has size: " << input->points.size() << "\n";
@@ -225,11 +224,11 @@ void preprocessCloud(pcl::PointCloud<PointT>::Ptr &input, pcl::PointCloud<PointT
     pcl::removeNaNFromPointCloud(*input, *input, mapping);
 
     // Downsampling
-    pcl::VoxelGrid<PointT> vox_grid;
+    pcl::VoxelGrid<PointType> vox_grid;
     vox_grid.setInputCloud(input);
     vox_grid.setLeafSize(voxel_leaf_size, voxel_leaf_size, voxel_leaf_size);
 
-    pcl::PointCloud<PointT>::Ptr temp_cloud(new pcl::PointCloud<PointT>());
+    PointCloudTypePtr temp_cloud(new PointCloudType());
     vox_grid.filter(*temp_cloud);
 
     output = temp_cloud;
@@ -237,7 +236,7 @@ void preprocessCloud(pcl::PointCloud<PointT>::Ptr &input, pcl::PointCloud<PointT
 #ifdef ENABLE_DISTANCE_THRESH
     // Distance thresholding
     const float depth_limit = 0.6;
-    pcl::PassThrough<PointT> pass;
+    pcl::PassThrough<PointType> pass;
     pass.setInputCloud(output);
     pass.setFilterFieldName("z");
     pass.setFilterLimits(0.0, distance_thresh); // depth_limit);
@@ -247,18 +246,18 @@ void preprocessCloud(pcl::PointCloud<PointT>::Ptr &input, pcl::PointCloud<PointT
     //    cout << "Output cloud has size: " << output->points.size() << "\n";
 }
 
-void segmentScene(pcl::PointCloud<PointT>::Ptr &input)
+void segmentScene(PointCloudTypePtr &input)
 {
     //    cout << "[segmentScene] Input cloud has size: " << input->points.size() << "\n";
 
-    pcl::search::Search<PointT>::Ptr tree = boost::shared_ptr<pcl::search::Search<PointT>>(new pcl::search::KdTree<PointT>);
-    pcl::PointCloud<PointT>::Ptr cloud_p(new pcl::PointCloud<PointT>()), cloud_f(new pcl::PointCloud<PointT>());
+    pcl::search::Search<PointType>::Ptr tree = boost::shared_ptr<pcl::search::Search<PointType>>(new pcl::search::KdTree<PointType>);
+    PointCloudTypePtr cloud_p(new PointCloudType()), cloud_f(new PointCloudType());
 
     // Segmentation plane
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients());
     pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
     // Create segmentation object
-    pcl::SACSegmentation<PointT> seg;
+    pcl::SACSegmentation<PointType> seg;
     seg.setModelType(pcl::SACMODEL_PLANE);
     seg.setMethodType(pcl::SAC_RANSAC);
     seg.setMaxIterations(1000);
@@ -267,7 +266,7 @@ void segmentScene(pcl::PointCloud<PointT>::Ptr &input)
     // Segmentation
     seg.setInputCloud(input);
     seg.segment(*inliers, *coefficients);
-    pcl::ExtractIndices<PointT> extract;
+    pcl::ExtractIndices<PointType> extract;
     extract.setInputCloud(input);
     extract.setIndices(inliers);
     extract.setNegative(false);
@@ -278,10 +277,10 @@ void segmentScene(pcl::PointCloud<PointT>::Ptr &input)
     input.swap(cloud_f);
 
     vector<pcl::PointIndices> clusters;
-    pcl::PointCloud<PointT>::Ptr colored_cloud;
+    PointCloudTypePtr colored_cloud;
 
     // RegionGrowingRGB segmentation
-    pcl::RegionGrowingRGB<PointT> reg;
+    pcl::RegionGrowingRGB<PointType> reg;
     reg.setInputCloud(input);
     reg.setSearchMethod(tree);
     reg.setDistanceThreshold(10);
@@ -305,7 +304,7 @@ void segmentScene(pcl::PointCloud<PointT>::Ptr &input)
         int ind = 0;
         for (auto &cluster : clusters)
         {
-            pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>);
+            PointCloudTypePtr cloud(new PointCloudType);
             for (auto &point : cluster->indices)
             {
                 cloud->points.push_back(input->points[point]);
@@ -324,11 +323,11 @@ void segmentScene(pcl::PointCloud<PointT>::Ptr &input)
     cout << "\n";
 }
 
-void classifyCluster(const int &ind, pcl::PointCloud<PointT>::Ptr &cloud)
+void classifyCluster(const int &ind, PointCloudTypePtr &cloud)
 {
     pcl::console::print_info("[classifyCluster] Cluster cloud %i has size: %d\n", ind, (int)cloud->points.size());
 
-    pcl::PointCloud<FeatureT>::Ptr descriptor(new pcl::PointCloud<FeatureT>);
+    FeatureCloudTypePtr descriptor(new FeatureCloudType);
     pcl::PointCloud<CRH90>::Ptr cluster_crh(new pcl::PointCloud<CRH90>);
     Eigen::Vector4f cluster_centroid;
 
@@ -392,9 +391,9 @@ void classifyCluster(const int &ind, pcl::PointCloud<PointT>::Ptr &cloud)
             std::cout << "model_cloud_file: " << model_cloud_file << "\n";
 
             // Clouds for storing object's cluster and model
-            pcl::PointCloud<PointT>::Ptr model_cloud(new pcl::PointCloud<PointT>);
+            PointCloudTypePtr model_cloud(new PointCloudType);
 
-            pcl::io::loadPCDFile<PointT>(model_cloud_file.c_str(), *model_cloud);
+            pcl::io::loadPCDFile<PointType>(model_cloud_file.c_str(), *model_cloud);
 
             cout << "Model cloud has size: " << model_cloud->points.size() << "\n";
 
@@ -430,7 +429,7 @@ void classifyCluster(const int &ind, pcl::PointCloud<PointT>::Ptr &cloud)
             std::cout << "Model centroid is loaded from file " << centroid_file << "\n";
             pcl::console::print_highlight("Model centroid: %f %f %f\n", model_centroid[0], model_centroid[1], model_centroid[2]);
 
-            pcl::CRHAlignment<PointT, 90> alignment;
+            pcl::CRHAlignment<PointType, 90> alignment;
             alignment.setInputAndTargetView(cloud, model_cloud);
             // CRHAlignment works with Vector3f, not Vector4f.
             Eigen::Vector3f cluster_centroid_3f(cluster_centroid[0], cluster_centroid[1], cluster_centroid[2]);
@@ -484,7 +483,7 @@ void classifyCluster(const int &ind, pcl::PointCloud<PointT>::Ptr &cloud)
     std::cout << "\n";
 }
 
-void recognize(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<PointT>::Ptr &cloud_filtered)
+void recognize(PointCloudTypePtr &cloud, PointCloudTypePtr &cloud_filtered)
 {
     //    cout << "\n\n[recognize] Point cloud has size: " << cloud->points.size() << "\n";
 
