@@ -92,7 +92,7 @@ void loadIndex()
     }
 }
 
-void createHist(PointCloudTypePtr &cloud, FeatureCloudTypePtr &descriptor, pcl::PointCloud<CRH90>::Ptr &crh_histogram, Eigen::Vector4f &centroid)
+void createHist(PointCloudTypePtr &cloud, FeatureCloudTypePtr &descriptor, CRHCloudTypePtr &crh_histogram, Eigen::Vector4f &centroid)
 {
     cout << "Create VFH histogram...\n";
 
@@ -175,7 +175,7 @@ void createHist(PointCloudTypePtr &cloud, FeatureCloudTypePtr &descriptor, pcl::
     {
         std::cout << "Computing CRH histogram...\n";
 
-        pcl::PointCloud<CRH90>::Ptr crh_histogram(new pcl::PointCloud<CRH90>);
+        CRHCloudTypePtr crh_histogram(new CRHCloudType);
 
         // CRH estimation object
         pcl::CRHEstimation<PointDT, NormalType, CRH90> crh;
@@ -328,7 +328,7 @@ void classifyCluster(const int &ind, PointCloudTypePtr &cloud)
     pcl::console::print_info("[classifyCluster] Cluster cloud %i has size: %d\n", ind, (int)cloud->points.size());
 
     FeatureCloudTypePtr descriptor(new FeatureCloudType);
-    pcl::PointCloud<CRH90>::Ptr cluster_crh(new pcl::PointCloud<CRH90>);
+    CRHCloudTypePtr cluster_crh(new CRHCloudType);
     Eigen::Vector4f cluster_centroid;
 
     createHist(cloud, descriptor, cluster_crh, cluster_centroid);
@@ -398,7 +398,7 @@ void classifyCluster(const int &ind, PointCloudTypePtr &cloud)
             cout << "Model cloud has size: " << model_cloud->points.size() << "\n";
 
             // Object for storing CRHs of both
-            pcl::PointCloud<CRH90>::Ptr model_crh(new pcl::PointCloud<CRH90>);
+            CRHCloudTypePtr model_crh(new CRHCloudType);
 
             // Objects for storing the centroids
             Eigen::Vector3f model_centroid;

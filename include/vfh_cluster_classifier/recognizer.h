@@ -96,7 +96,7 @@ nearestKSearch(flann::Index<flann::ChiSquareDistance<float>> &index, const vfh_m
  */
 bool loadHist(const int &index, vfh_model &vfh);
 
-void createHist(PointCloudTypePtr &cloud, FeatureCloudType::Ptr &descriptor, pcl::PointCloud<CRH90>::Ptr &crh_histogram, Eigen::Vector4f &centroid);
+void createHist(PointCloudTypePtr &cloud, FeatureCloudType::Ptr &descriptor, CRHCloudTypePtr &crh_histogram, Eigen::Vector4f &centroid);
 
 void preprocessCloud(PointCloudTypePtr &input, PointCloudTypePtr &output);
 

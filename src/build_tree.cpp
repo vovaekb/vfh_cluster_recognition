@@ -1,5 +1,5 @@
 // #define VFH_COMPUTE_DEBUG
-#define DISABLE_COMPUTING_CRH
+// #define DISABLE_COMPUTING_CRH
 
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
@@ -223,7 +223,7 @@ void createFeatureModels(const boost::filesystem::path &base_dir, const std::str
                 {
                     std::cout << "Compute CRH features ...\n";
                     // Compute the CRH histogram
-                    pcl::PointCloud<CRH90>::Ptr histogram(new pcl::PointCloud<CRH90>);
+                    CRHCloudType::Ptr histogram(new CRHCloudType);
 
                     // CRH estimation object
                     pcl::CRHEstimation<PointType, NormalType, CRH90> crh;

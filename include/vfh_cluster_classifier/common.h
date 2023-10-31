@@ -13,11 +13,14 @@ using namespace std;
 typedef pcl::PointXYZRGB PointType;
 typedef pcl::PointXYZ DepthPointType;
 typedef pcl::Normal NormalType;
+typedef pcl::Histogram<90> CRH90; // Camera Roll Histograms
 typedef pcl::PointCloud<PointType> PointCloudType;
 typedef pcl::PointCloud<DepthPointType> DepthPointCloudType;
 typedef pcl::PointCloud<NormalType> NormalCloudType;
+typedef pcl::PointCloud<CRH90> CRHCloudType;
 typedef PointCloudType::Ptr PointCloudTypePtr;
 typedef DepthPointCloudType::Ptr DepthPointCloudTypePtr;
+typedef CRHCloudType::Ptr CRHCloudTypePtr;
 typedef PointCloudType::ConstPtr PointTConstPtr;
 typedef pcl::VFHSignature308 FeatureType;
 typedef pcl::PointCloud<FeatureType> FeatureCloudType;
