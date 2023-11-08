@@ -20,15 +20,6 @@ using namespace std;
 bool calculate_crh(false);
 bool calculate_vfh(false);
 
-typedef std::pair<std::string, std::vector<float>> vfh_model;
-typedef pcl::Normal NormalType;
-typedef pcl::PointXYZRGB PointType;
-typedef pcl::PointCloud<PointType> PointCloudType;
-typedef PointCloudType::Ptr PointCloudTypePtr;
-typedef PointCloudType::ConstPtr PointTConstPtr;
-typedef pcl::VFHSignature308 FeatureType;
-typedef pcl::Histogram<90> CRH90;
-
 #ifndef DISABLE_COMPUTING_CRH
 // Required for saving CRH histogram to PCD file
 POINT_CLOUD_REGISTER_POINT_STRUCT(pcl::Histogram<90>,

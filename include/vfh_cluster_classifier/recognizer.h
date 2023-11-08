@@ -4,6 +4,10 @@
 #ifndef RECOGNIZER_H
 #define RECOGNIZER_H
 
+#include <iostream>
+#include <vector>
+#include <fstream>
+
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/console/print.h>
@@ -27,23 +31,9 @@
 #include <flann/flann.h>
 #include <flann/io/hdf5.h>
 
-#include <iostream>
-#include <vector>
-#include <fstream>
+#include "typedefs.h"
 
 using namespace std;
-
-// types definition
-typedef pcl::PointXYZRGB PointType;
-typedef pcl::Normal NormalType;
-typedef pcl::VFHSignature308 FeatureType;
-typedef pcl::PointCloud<PointType> PointCloudType;
-typedef PointCloudType::Ptr PointCloudTypePtr;
-typedef PointCloudType::ConstPtr PointTConstPtr;
-typedef PointCloudType::Ptr PointCloudTypePtr;
-
-typedef std::pair<std::string, std::vector<float>> vfh_model;
-typedef pcl::Histogram<90> CRH90;
 
 // Required for saving CRH histogram to PCD file
 POINT_CLOUD_REGISTER_POINT_STRUCT(CRH90,

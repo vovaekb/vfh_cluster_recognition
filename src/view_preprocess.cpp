@@ -13,10 +13,6 @@
 
 using namespace std;
 
-typedef pcl::PointXYZRGB PointType;
-typedef pcl::PointCloud<PointType>::Ptr PointCloudTypePtr;
-typedef pcl::PointCloud<PointType>::ConstPtr PointCloudTypeConstPtr;
-
 string samples_path;
 string output_path;
 

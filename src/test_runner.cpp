@@ -1,16 +1,13 @@
-//#define DEBUG_GT_FILE_PATH_EXISTENCE
-//#define DEBUG_ITERATING_THROUGH_THRESH_RANGE
-//#define DEBUG_RUN_TIME_TEST
+// #define DEBUG_GT_FILE_PATH_EXISTENCE
+// #define DEBUG_ITERATING_THROUGH_THRESH_RANGE
+// #define DEBUG_RUN_TIME_TEST
 
 #include "vfh_cluster_classifier/common.h"
 #include "vfh_cluster_classifier/persistence_utils.h"
 #include "vfh_cluster_classifier/recognizer.h"
 #include "vfh_cluster_classifier/test_runner.h"
 
-typedef pcl::PointXYZRGB PointType;
-typedef pcl::PointCloud<PointType>::Ptr PointCloudTypePtr;
-
-TestRunner::TestRunner(const string &tests_base_path, string test_setup_name): tests_base_path_(tests_base_path), test_setup_name_(test_setup_name)
+TestRunner::TestRunner(const string &tests_base_path, string test_setup_name) : tests_base_path_(tests_base_path), test_setup_name_(test_setup_name)
 {
     tests_base_path_ = tests_base_path_ + "/" + test_setup_name_;
 
@@ -24,7 +21,7 @@ void TestRunner::initTests()
 {
     std::cout << "[TestRunner::initTests]\n";
 
-    if(!boost::filesystem::exists(tests_base_path_))
+    if (!boost::filesystem::exists(tests_base_path_))
         boost::filesystem::create_directories(tests_base_path_);
 
     stringstream test_path_ss;
@@ -43,17 +40,17 @@ void TestRunner::initTests()
     output_.close();
 
     // Specify path to results file
-//    stringstream results_path_ss;
-//    results_path_ss << tests_base_path_ << "/results.txt";
+    //    stringstream results_path_ss;
+    //    results_path_ss << tests_base_path_ << "/results.txt";
 
-//    test_output_file_ = results_path_ss.str();
+    //    test_output_file_ = results_path_ss.str();
 
-//    pcl::console::print_debug("Results file: %s\n", test_output_file_.c_str());
+    //    pcl::console::print_debug("Results file: %s\n", test_output_file_.c_str());
 
-//    iterateTestScenes();
+    //    iterateTestScenes();
 
     // Iterate over all the threshold values in the specified range
-    for(int th = start_thresh_; th <= end_thresh_; th += 1)
+    for (int th = start_thresh_; th <= end_thresh_; th += 1)
     {
         thresh = th;
 
@@ -85,21 +82,20 @@ void TestRunner::iterateTestScenes()
     boost::filesystem::path test_scenes_path = test_scenes_dir;
     boost::filesystem::directory_iterator end_itr;
 
-    for(boost::filesystem::directory_iterator iter (test_scenes_path); iter != end_itr; ++iter)
+    for (boost::filesystem::directory_iterator iter(test_scenes_path); iter != end_itr; ++iter)
     {
-        if(boost::filesystem::extension(iter->path()) == ".pcd")
+        if (boost::filesystem::extension(iter->path()) == ".pcd")
         {
             test_scene = (iter->path()).string();
 
             pcl::console::print_debug("Load the test scene: %s\n", test_scene.c_str());
 
             std::size_t pos = test_scene.find_last_of("/") + 1;
-            scene_name = test_scene.substr( pos );
+            scene_name = test_scene.substr(pos);
 
             scene_name = scene_name.substr(0, scene_name.find(".pcd"));
 
             std::cout << "scene_name: " << scene_name << "\n";
-
 
             // Specify path to ground truth file
             string gt_file = scene_name + ".txt";
@@ -110,7 +106,7 @@ void TestRunner::iterateTestScenes()
 
             pcl::console::print_debug("gt file path: %s\n", gt_file_path.c_str());
 
-            if(!boost::filesystem::exists(gt_file_path))
+            if (!boost::filesystem::exists(gt_file_path))
             {
                 pcl::console::print_error("Ground truth path %s doesn't exist\n", gt_file_path.c_str());
             }
@@ -118,20 +114,19 @@ void TestRunner::iterateTestScenes()
             runDetector();
         }
     }
-
 }
 
 void TestRunner::runDetector()
 {
     std::cout << "Run detector\n";
 
-    PointCloudTypePtr scene_cloud (new PointCloudType ()), scene_cloud_filtered (new PointCloudType ());
+    PointCloudTypePtr scene_cloud(new PointCloudType()), scene_cloud_filtered(new PointCloudType());
 
     //
     // Load scene
     //
-//    cout << "\n\n ---------------- Loading scene ---------------------- \n\n";
-//    cout << "\n\nScene: " << scene_pcd_file << "\n";
+    //    cout << "\n\n ---------------- Loading scene ---------------------- \n\n";
+    //    cout << "\n\nScene: " << scene_pcd_file << "\n";
     pcl::io::loadPCDFile(test_scene, *scene_cloud);
 
     pcl::console::print_debug("Scene cloud has %d points\n", (int)scene_cloud->points.size());
@@ -149,51 +144,66 @@ void TestRunner::runDetector()
     int tn_n = 0;
     int fn_n = 0;
 
-//    if(recognized_objects.size())
-//    {
-        for(int i = 0; i < training_objects_ids.size(); i++)
+    //    if(recognized_objects.size())
+    //    {
+    for (int i = 0; i < training_objects_ids.size(); i++)
+    {
+        string train_object_id = training_objects_ids[i];
+        bool is_present = PersistenceUtils::modelPresents(gt_file_path, train_object_id);
+        bool is_found = false;
+
+        for (int j = 0; j < recognized_objects.size(); j++)
         {
-            string train_object_id = training_objects_ids[i];
-            bool is_present = PersistenceUtils::modelPresents(gt_file_path, train_object_id);
-            bool is_found = false;
+            std::string object_id = recognized_objects[j];
+            if (object_id == train_object_id)
+                is_found = true;
+        }
 
-            for(int j = 0; j < recognized_objects.size(); j++)
+        cout << "Model " << train_object_id << "\n";
+        cout << "\t- is present: " << is_present << "\n";
+        cout << "\t- is found: " << is_found << "\n\n";
+
+        if (is_present)
+        {
+            if (is_found)
             {
-                std::string object_id = recognized_objects[j];
-                if(object_id == train_object_id) is_found = true;
-            }
-
-            cout << "Model " << train_object_id << "\n";
-            cout << "\t- is present: " << is_present << "\n";
-            cout << "\t- is found: " << is_found << "\n\n";
-
-            if(is_present)
-            {
-                if(is_found) { tp_n++; positives_n++; }
-                else { fn_n++; negatives_n++; }
+                tp_n++;
+                positives_n++;
             }
             else
             {
-                if(is_found) { fp_n++; positives_n++; }
-                else { tn_n++; negatives_n++; }
+                fn_n++;
+                negatives_n++;
             }
-
         }
+        else
+        {
+            if (is_found)
+            {
+                fp_n++;
+                positives_n++;
+            }
+            else
+            {
+                tn_n++;
+                negatives_n++;
+            }
+        }
+    }
 
-        recognized_objects.clear();
-//    }
+    recognized_objects.clear();
+    //    }
 
-//    cout << "Positives: " << positives_n << "\n";
-//    cout << "Negatives: " << negatives_n << "\n";
-//    cout << "tp: " << tp_n << ", fp: " << fp_n << "\n";
-//    cout << "fn: " << fn_n << ", tn: " << tn_n << "\n";
+    //    cout << "Positives: " << positives_n << "\n";
+    //    cout << "Negatives: " << negatives_n << "\n";
+    //    cout << "tp: " << tp_n << ", fp: " << fp_n << "\n";
+    //    cout << "fn: " << fn_n << ", tn: " << tn_n << "\n";
 
     // Write the results to file
     output_.open(test_output_file_.c_str(), std::ios::app);
     output_ << scene_name << "\n";
 
-    output_ << "tp: " << tp_n << ", fp: " << fp_n <<
-               ", fn: " << fn_n << ", tn: " << tn_n << "\n\n";
+    output_ << "tp: " << tp_n << ", fp: " << fp_n << ", fn: " << fn_n << ", tn: " << tn_n << "\n\n";
 
     output_.close();
 

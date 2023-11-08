@@ -48,16 +48,6 @@
 
 using namespace std;
 
-// types definition
-typedef pcl::PointXYZRGB PointType;
-typedef pcl::PointCloud<PointType> PointCloudType;
-typedef PointCloudType::Ptr PointCloudTypePtr;
-typedef PointCloudType::ConstPtr PointTConstPtr;
-typedef pcl::Normal NormalType;
-typedef pcl::VFHSignature308 FeatureType;
-typedef std::pair<std::string, std::vector<float>> vfh_model;
-typedef pcl::Histogram<90> CRH90;
-
 /***** Shared parameters ******/
 string base_descr_dir = "clusters_vfh";
 string training_data_path = "training_models";
