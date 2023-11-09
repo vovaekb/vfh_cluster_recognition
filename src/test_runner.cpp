@@ -120,7 +120,7 @@ void TestRunner::runDetector()
 {
     std::cout << "Run detector\n";
 
-    PointCloudTypePtr scene_cloud(new PointCloudType()), scene_cloud_filtered(new PointCloudType());
+    PointCloudPtr scene_cloud(new PointCloudType()), scene_cloud_filtered(new PointCloudType());
 
     //
     // Load scene

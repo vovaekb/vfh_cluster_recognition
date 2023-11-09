@@ -36,9 +36,7 @@
 #include <vector>
 #include <fstream>
 
-#include "vfh_cluster_classifier/common.h"
 #include "vfh_cluster_classifier/recognizer.h"
-#include "vfh_cluster_classifier/persistence_utils.h"
 
 float voxel_leaf_size(0.001); // (0.005);
 float normal_radius(0.03);
@@ -46,53 +44,9 @@ float normal_radius(0.03);
 std::vector<index_score> models_scores;
 vector<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis>> object_hypotheses_;
 
-flann::Index<flann::ChiSquareDistance<float>> *flann_index;
+flann_distance_metric *flann_index;
 
-bool loadFileList(vector<vfh_model> &models, const string &filename)
-{
-    //    pcl::console::print_info("[loadFileList]\n");
-
-    ifstream fs;
-    fs.open(filename.c_str());
-    if (!fs.is_open() || fs.fail())
-        return (false);
-
-    string line;
-    while (!fs.eof())
-    {
-        getline(fs, line);
-        if (line.empty())
-            continue;
-
-        vfh_model m;
-        m.first = line;
-        models.push_back(m);
-    }
-    fs.close();
-    return (true);
-}
-
-void loadIndex()
-{
-    std::cout << "Loading search index ...\n";
-    string kdtree_idx_file_name = training_data_path + "/kdtree.idx";
-
-    std::cout << "FLANN index file: " << kdtree_idx_file_name << "\n";
-
-    // Check if the tree index has already been saved to disk
-    if (!boost::filesystem::exists(kdtree_idx_file_name))
-    {
-        pcl::console::print_error("Could not find kd-tree index in file %s!", kdtree_idx_file_name.c_str());
-        return;
-    }
-    else
-    {
-        flann_index = new flann::Index<flann::ChiSquareDistance<float>>(data, flann::SavedIndexParams(kdtree_idx_file_name.c_str()));
-        flann_index->buildIndex();
-    }
-}
-
-void createHist(PointCloudTypePtr &cloud, FeatureCloudTypePtr &descriptor, CRHCloudTypePtr &crh_histogram, Eigen::Vector4f &centroid)
+void createHist(PointCloudPtr &cloud, FeatureCloudTypePtr &descriptor, CRHCloudTypePtr &crh_histogram, Eigen::Vector4f &centroid)
 {
     cout << "Create VFH histogram...\n";
 
@@ -199,23 +153,7 @@ void createHist(PointCloudTypePtr &cloud, FeatureCloudTypePtr &descriptor, CRHCl
 #endif
 }
 
-inline void
-nearestKSearch(flann::Index<flann::ChiSquareDistance<float>> &index, const vfh_model &model,
-               int k, flann::Matrix<int> &indices, flann::Matrix<float> &distances)
-{
-    std::cout << "Nearest K search...\n";
-    // Query point
-    flann::Matrix<float> p = flann::Matrix<float>(new float[model.second.size()], 1, model.second.size());
-    memcpy(&p.ptr()[0], &model.second[0], p.cols * p.rows * sizeof(float));
-
-    indices = flann::Matrix<int>(new int[k], 1, k);
-    distances = flann::Matrix<float>(new float[k], 1, k);
-
-    index.knnSearch(p, indices, distances, k, flann::SearchParams(512));
-    delete[] p.ptr();
-}
-
-void preprocessCloud(PointCloudTypePtr &input, PointCloudTypePtr &output)
+void preprocessCloud(PointCloudPtr &input, PointCloudPtr &output)
 {
     cout << "Preprocess cloud ...\n";
     //    cout << "Input cloud has size: " << input->points.size() << "\n";
@@ -228,7 +166,7 @@ void preprocessCloud(PointCloudTypePtr &input, PointCloudTypePtr &output)
     vox_grid.setInputCloud(input);
     vox_grid.setLeafSize(voxel_leaf_size, voxel_leaf_size, voxel_leaf_size);
 
-    PointCloudTypePtr temp_cloud(new PointCloudType());
+    PointCloudPtr temp_cloud(new PointCloudType());
     vox_grid.filter(*temp_cloud);
 
     output = temp_cloud;
@@ -246,12 +184,12 @@ void preprocessCloud(PointCloudTypePtr &input, PointCloudTypePtr &output)
     //    cout << "Output cloud has size: " << output->points.size() << "\n";
 }
 
-void segmentScene(PointCloudTypePtr &input)
+void segmentScene(PointCloudPtr &input)
 {
     //    cout << "[segmentScene] Input cloud has size: " << input->points.size() << "\n";
 
     pcl::search::Search<PointType>::Ptr tree = boost::shared_ptr<pcl::search::Search<PointType>>(new pcl::search::KdTree<PointType>);
-    PointCloudTypePtr cloud_p(new PointCloudType()), cloud_f(new PointCloudType());
+    PointCloudPtr cloud_p(new PointCloudType()), cloud_f(new PointCloudType());
 
     // Segmentation plane
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients());
@@ -277,7 +215,7 @@ void segmentScene(PointCloudTypePtr &input)
     input.swap(cloud_f);
 
     vector<pcl::PointIndices> clusters;
-    PointCloudTypePtr colored_cloud;
+    PointCloudPtr colored_cloud;
 
     // RegionGrowingRGB segmentation
     pcl::RegionGrowingRGB<PointType> reg;
@@ -304,7 +242,7 @@ void segmentScene(PointCloudTypePtr &input)
         int ind = 0;
         for (auto &cluster : clusters)
         {
-            PointCloudTypePtr cloud(new PointCloudType);
+            PointCloudPtr cloud(new PointCloudType);
             for (auto &point : cluster->indices)
             {
                 cloud->points.push_back(input->points[point]);
@@ -323,7 +261,7 @@ void segmentScene(PointCloudTypePtr &input)
     cout << "\n";
 }
 
-void classifyCluster(const int &ind, PointCloudTypePtr &cloud)
+void classifyCluster(const int &ind, PointCloudPtr &cloud)
 {
     pcl::console::print_info("[classifyCluster] Cluster cloud %i has size: %d\n", ind, (int)cloud->points.size());
 
@@ -391,7 +329,7 @@ void classifyCluster(const int &ind, PointCloudTypePtr &cloud)
             std::cout << "model_cloud_file: " << model_cloud_file << "\n";
 
             // Clouds for storing object's cluster and model
-            PointCloudTypePtr model_cloud(new PointCloudType);
+            PointCloudPtr model_cloud(new PointCloudType);
 
             pcl::io::loadPCDFile<PointType>(model_cloud_file.c_str(), *model_cloud);
 
@@ -483,7 +421,7 @@ void classifyCluster(const int &ind, PointCloudTypePtr &cloud)
     std::cout << "\n";
 }
 
-void recognize(PointCloudTypePtr &cloud, PointCloudTypePtr &cloud_filtered)
+void recognize(PointCloudPtr &cloud, PointCloudPtr &cloud_filtered)
 {
     //    cout << "\n\n[recognize] Point cloud has size: " << cloud->points.size() << "\n";
 

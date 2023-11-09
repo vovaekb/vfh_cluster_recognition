@@ -31,7 +31,10 @@
 #include <flann/flann.h>
 #include <flann/io/hdf5.h>
 
-#include "typedefs.h"
+#include "vfh_cluster_classifier/common.h"
+#include "vfh_cluster_classifier/persistence_utils.h"
+#include "vfh_cluster_classifier/nearest_search.h"
+#include "vfh_cluster_classifier/typedefs.h"
 
 using namespace std;
 
@@ -50,7 +53,7 @@ struct index_score
 struct ObjectHypothesis
 {
     std::string model_id;
-    PointCloudTypePtr model_template;
+    PointCloudPtr model_template;
     float icp_score;
     Eigen::Matrix4f transformation;
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -58,16 +61,6 @@ struct ObjectHypothesis
 
 // vector<string> best_candidate_names;
 // vector<float> best_candidate_scores;
-
-/** \brief Load the list of file model names from an ASCII file
- * \param models the resultant list of model name
- * \param filename the input file name
- */
-bool loadFileList(vector<vfh_model> &models, const string &filename);
-
-/** \brief Load FLANN search index
- */
-void loadIndex();
 
 /** \brief Search for the closest k neighbors
  * \param index the tree
@@ -77,7 +70,7 @@ void loadIndex();
  * \param distances the resultant neighbor distances
  */
 inline void
-nearestKSearch(flann::Index<flann::ChiSquareDistance<float>> &index, const vfh_model &model,
+nearestKSearch(flann_distance_metric &index, const vfh_model &model,
                int k, flann::Matrix<int> &indices, flann::Matrix<float> &distances);
 
 /** \brief Loads an n-D histogram file as a VFH signature
@@ -86,15 +79,15 @@ nearestKSearch(flann::Index<flann::ChiSquareDistance<float>> &index, const vfh_m
  */
 bool loadHist(const int &index, vfh_model &vfh);
 
-void createHist(PointCloudTypePtr &cloud, FeatureCloudType::Ptr &descriptor, CRHCloudTypePtr &crh_histogram, Eigen::Vector4f &centroid);
+void createHist(PointCloudPtr &cloud, FeatureCloudType::Ptr &descriptor, CRHCloudTypePtr &crh_histogram, Eigen::Vector4f &centroid);
 
-void preprocessCloud(PointCloudTypePtr &input, PointCloudTypePtr &output);
+void preprocessCloud(PointCloudPtr &input, PointCloudPtr &output);
 
-void segmentScene(PointCloudTypePtr &cloud);
+void segmentScene(PointCloudPtr &cloud);
 
-void classifyCluster(const int &ind, PointCloudTypePtr &cloud);
+void classifyCluster(const int &ind, PointCloudPtr &cloud);
 
-void recognize(PointCloudTypePtr &cloud, PointCloudTypePtr &cloud_filtered);
+void recognize(PointCloudPtr &cloud, PointCloudPtr &cloud_filtered);
 
 void clearData();
 

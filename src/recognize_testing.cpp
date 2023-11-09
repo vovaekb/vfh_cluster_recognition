@@ -41,9 +41,7 @@
 #include <flann/flann.h>
 #include <flann/io/hdf5.h>
 
-#include "vfh_cluster_classifier/common.h"
 #include "vfh_cluster_classifier/recognizer.h"
-#include "vfh_cluster_classifier/persistence_utils.h"
 #include "vfh_cluster_classifier/test_runner.h"
 
 using namespace std;
@@ -64,7 +62,7 @@ int nn_k = 3;     // 6
 int thresh = 195; // 180; // 60
 float distance_thresh;
 
-std::vector<PointCloudTypePtr> cluster_clouds;
+std::vector<PointCloudPtr> cluster_clouds;
 std::vector<std::string> recognized_objects;
 string found_model("");
 
@@ -242,7 +240,7 @@ void runTests()
 
                     cout << "[runTests] Scene path: " << scene_pcd_path << "\n";
 
-                    PointCloudTypePtr scene_cloud(new PointCloudType()), scene_cloud_filtered(new PointCloudType());
+                    PointCloudPtr scene_cloud(new PointCloudType()), scene_cloud_filtered(new PointCloudType());
 
                     pcl::io::loadPCDFile(scene_pcd_path.c_str(), *scene_cloud);
 
@@ -269,7 +267,7 @@ void runTests()
  */
 void recognizeScene()
 {
-    PointCloudTypePtr scene_cloud(new PointCloudType()), scene_cloud_filtered(new PointCloudType());
+    PointCloudPtr scene_cloud(new PointCloudType()), scene_cloud_filtered(new PointCloudType());
 
     pcl::io::loadPCDFile(test_scene.c_str(), *scene_cloud);
 
@@ -388,7 +386,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        loadFileList(models, training_data_list_file_name);
+        PersistenceUtils::loadFileList(models, training_data_list_file_name);
         flann::load_from_file(data, training_data_h5_file_name, "training_data");
         pcl::console::print_highlight("Training data found. Loaded %d VFH models from %s and %s.\n",
                                       (int)data.rows, training_data_h5_file_name.c_str(), training_data_list_file_name.c_str());

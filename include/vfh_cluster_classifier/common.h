@@ -27,7 +27,7 @@ extern string test_scenes_dir;
 extern string test_scene;
 extern string scene_name;
 
-extern std::list<PointCloudTypePtr> cluster_clouds;
+extern std::list<PointCloudPtr> cluster_clouds;
 extern std::list<std::string> recognized_objects;
 extern string found_model;
 

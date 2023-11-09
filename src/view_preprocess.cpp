@@ -23,11 +23,11 @@ int clouds_number(42);
 float voxel_leaf_size_(0.001);
 
 // Containers for objects
-vector<PointCloudTypePtr> clouds;
+vector<PointCloudPtr> clouds;
 
 vector<int> mapping;
 
-void process_cloud(PointCloudTypePtr &cloud, int index)
+void process_cloud(PointCloudPtr &cloud, int index)
 {
     if (perform_scaling)
     {
@@ -48,7 +48,7 @@ void process_cloud(PointCloudTypePtr &cloud, int index)
     voxel_grid.setInputCloud(cloud);
     voxel_grid.setLeafSize(voxel_leaf_size_, voxel_leaf_size_, voxel_leaf_size_);
 
-    PointCloudTypePtr temp_cloud(new PointCloudType());
+    PointCloudPtr temp_cloud(new PointCloudType());
     voxel_grid.filter(*temp_cloud);
     cloud = temp_cloud;
 
@@ -76,7 +76,7 @@ void process()
 
         if (boost::filesystem::exists(pcd_path))
         {
-            PointCloudTypePtr cloud(new PointCloudType());
+            PointCloudPtr cloud(new PointCloudType());
             if (pcl::io::loadPCDFile(pcd_path, *cloud) != 0)
             {
                 return;

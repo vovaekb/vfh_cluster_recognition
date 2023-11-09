@@ -22,7 +22,7 @@
 using namespace std;
 
 using PointType = pcl::PointXYZRGB;
-using PointCloudTypePtr = pcl::PointCloud<PointType>::Ptr;
+using PointCloudPtr = pcl::PointCloud<PointType>::Ptr;
 using PointCloudTypeConstPtr = pcl::PointCloud<PointType>::ConstPtr;
 using NormalType = pcl::Normal;
 using NormalCloudType = pcl::PointCloud<NormalType>::Ptr;
@@ -40,7 +40,7 @@ public:
     ~FeatureCloud();
 
     // Process the given cloud
-    void setInputCloud(PointCloudTypePtr xyz, const string &cloud_type);
+    void setInputCloud(PointCloudPtr xyz, const string &cloud_type);
     // Load and process point cloud in the given PCD
     void loadInputCloud(const string &pcd_file, const string &cloud_type);
 
@@ -50,11 +50,11 @@ public:
 
     void setViewId(const int &view_id);
 
-    PointCloudTypePtr getPointCloud() const;
+    PointCloudPtr getPointCloud() const;
 
     NormalCloudType getSurfaceNormals() const;
 
-    PointCloudTypePtr getKeypoints() const;
+    PointCloudPtr getKeypoints() const;
 
     SHOTDescriptorCloudType getLocalFeatures() const;
 
@@ -75,9 +75,9 @@ protected:
 
 private:
     // Point cloud data
-    PointCloudTypePtr xyz_;
+    PointCloudPtr xyz_;
     NormalCloudType normals_;
-    PointCloudTypePtr keypoints_;
+    PointCloudPtr keypoints_;
     SHOTDescriptorCloudType features_;
     Eigen::Matrix4f pose_;
 

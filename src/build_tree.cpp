@@ -15,6 +15,8 @@
 #include <flann/io/hdf5.h>
 #include <fstream>
 
+#include "vfh_cluster_classifier/nearest_search.h"
+
 using namespace std;
 
 bool calculate_crh(false);
@@ -31,57 +33,57 @@ string training_dir;
 float voxel_leaf_size(0.005);
 float normal_radius(0.03);
 
-/**
- * \brief Loads an n-D histogram file as a VFH signature.
- *
- * \param path - The input file name.
- * \param vfh - The resultant VFH signature.
- * \return - True if the loading is successful, false otherwise.
- */
-bool loadHist(const boost::filesystem::path &path, vfh_model &vfh)
-{
-    try
-    {
-        // Read the header of the PCD file
-        pcl::PCLPointCloud2 cloud;
-        pcl::PCDReader reader;
-        Eigen::Vector4f origin;
-        Eigen::Quaternionf orientation;
-        int version;
-        int type;
-        unsigned int idx;
-        reader.readHeader(path.string(), cloud, origin, orientation, version, type, idx);
+// /**
+//  * \brief Loads an n-D histogram file as a VFH signature.
+//  *
+//  * \param path - The input file name.
+//  * \param vfh - The resultant VFH signature.
+//  * \return - True if the loading is successful, false otherwise.
+//  */
+// bool loadHist(const boost::filesystem::path &path, vfh_model &vfh)
+// {
+//     try
+//     {
+//         // Read the header of the PCD file
+//         pcl::PCLPointCloud2 cloud;
+//         pcl::PCDReader reader;
+//         Eigen::Vector4f origin;
+//         Eigen::Quaternionf orientation;
+//         int version;
+//         int type;
+//         unsigned int idx;
+//         reader.readHeader(path.string(), cloud, origin, orientation, version, type, idx);
 
-        // Check if the "vfh" field exists and if the point cloud has only one point
-        int vfh_idx = pcl::getFieldIndex(cloud, "vfh");
-        if (vfh_idx == -1 || (int)cloud.width * cloud.height != 1)
-        {
-            return false;
-        }
-    }
-    catch (const pcl::InvalidConversionException &)
-    {
-        return false;
-    }
+//         // Check if the "vfh" field exists and if the point cloud has only one point
+//         int vfh_idx = pcl::getFieldIndex(cloud, "vfh");
+//         if (vfh_idx == -1 || (int)cloud.width * cloud.height != 1)
+//         {
+//             return false;
+//         }
+//     }
+//     catch (const pcl::InvalidConversionException &)
+//     {
+//         return false;
+//     }
 
-    // Load the PCD file into a point cloud
-    FeatureCloudType point;
-    pcl::io::loadPCDFile(path.string(), point);
-    vfh.second.resize(308);
+//     // Load the PCD file into a point cloud
+//     FeatureCloudType point;
+//     pcl::io::loadPCDFile(path.string(), point);
+//     vfh.second.resize(308);
 
-    std::vector<pcl::PCLPointField> fields;
-    pcl::getFieldIndex(point, "vfh", fields);
+//     std::vector<pcl::PCLPointField> fields;
+//     pcl::getFieldIndex(point, "vfh", fields);
 
-    // Copy the histogram values from the loaded point cloud
-    for (size_t i = 0; i < fields[vfh_idx].count; ++i)
-    {
-        vfh.second[i] = point.points[0].histogram[i];
-    }
+//     // Copy the histogram values from the loaded point cloud
+//     for (size_t i = 0; i < fields[vfh_idx].count; ++i)
+//     {
+//         vfh.second[i] = point.points[0].histogram[i];
+//     }
 
-    // Set the file name as the first element of the VFH signature
-    vfh.first = path.string();
-    return true;
-}
+//     // Set the file name as the first element of the VFH signature
+//     vfh.first = path.string();
+//     return true;
+// }
 
 void loadFeatureModels(const boost::filesystem::path &base_dir, const std::string &extension,
                        std::vector<vfh_model> &models)
@@ -109,7 +111,7 @@ void loadFeatureModels(const boost::filesystem::path &base_dir, const std::strin
     }
 }
 
-void processCloud(PointCloudTypePtr &in, PointCloudTypePtr &out)
+void processCloud(PointCloudPtr &in, PointCloudPtr &out)
 {
     vector<int> mapping;
     pcl::removeNaNFromPointCloud(*in, *in, mapping);
@@ -119,7 +121,9 @@ void processCloud(PointCloudTypePtr &in, PointCloudTypePtr &out)
     vox_grid.setInputCloud(in);
     vox_grid.setLeafSize(voxel_leaf_size, voxel_leaf_size, voxel_leaf_size);
 
-    PointCloudTypePtr temp_cloud(new PointCloudType());
+    // TODO: use std::shared_ptr
+    std::shared_ptr<PointCloudType>... = std::make_shared<PointCloudType>();
+    PointCloudPtr temp_cloud(new PointCloudType());
     vox_grid.filter(*temp_cloud);
 
     out = temp_cloud;
@@ -158,7 +162,7 @@ void createFeatureModels(const boost::filesystem::path &base_dir, const std::str
 
             if (!boost::filesystem::exists(descr_file))
             {
-                PointCloudTypePtr view(new PointCloudType());
+                PointCloudPtr view(new PointCloudType());
 
                 string full_file_name = it->path().string(); // (base_dir / it->path ().filename ()).string();
                 //          string file_name = (it->path ().filename ()).string();
@@ -372,7 +376,7 @@ int main(int argc, char **argv)
 
     // Build the tree index and save it to disk
     pcl::console::print_error("Building the kdtree index (%s) for %d elements...\n", kdtree_idx_file_name.c_str(), (int)data.rows);
-    flann::Index<flann::ChiSquareDistance<float>> index(data, flann::LinearIndexParams());
+    flann_distance_metric index(data, flann::LinearIndexParams());
     // flann::Index<flann::ChiSquareDistance<float> > index (data, flann::KDTreeIndexParams (4));
     index.buildIndex();
     index.save(kdtree_idx_file_name);
