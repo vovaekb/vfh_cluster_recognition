@@ -4,6 +4,9 @@
 
 #include "vfh_cluster_classifier/typedefs.h"
 
+using namespace pcl::console;
+using namespace pcl::io;
+
 /**
  * \brief Loads an n-D histogram file as a VFH signature.
  *
@@ -26,8 +29,8 @@ bool loadHist(const boost::filesystem::path &path, vfh_model &vfh)
         reader.readHeader(path.string(), cloud, origin, orientation, version, type, idx);
 
         // Check if the "vfh" field exists and if the point cloud has only one point
-        int vfh_idx = pcl::getFieldIndex(cloud, "vfh");
-        if (vfh_idx == -1 || (int)cloud.width * cloud.height != 1)
+        auto vfh_idx = pcl::getFieldIndex(cloud, "vfh");
+        if (vfh_idx == -1 || static_cast<int>(cloud.width) * cloud.height != 1)
         {
             return false;
         }
@@ -68,7 +71,7 @@ void loadIndex()
     // Check if the tree index has already been saved to disk
     if (!boost::filesystem::exists(kdtree_idx_file_name))
     {
-        pcl::console::print_error("Could not find kd-tree index in file %s!", kdtree_idx_file_name.c_str());
+        print_error("Could not find kd-tree index in file %s!", kdtree_idx_file_name.c_str());
         return;
     }
     else

@@ -15,6 +15,7 @@
 #include <flann/io/hdf5.h>
 #include <fstream>
 
+#include "vfh_cluster_classifier/persistence_utils.h"
 #include "vfh_cluster_classifier/nearest_search.h"
 
 using namespace std;
@@ -56,7 +57,7 @@ float normal_radius(0.03);
 
 //         // Check if the "vfh" field exists and if the point cloud has only one point
 //         int vfh_idx = pcl::getFieldIndex(cloud, "vfh");
-//         if (vfh_idx == -1 || (int)cloud.width * cloud.height != 1)
+//         if (vfh_idx == -1 || static_cast<int>(cloud.width) * cloud.height != 1)
 //         {
 //             return false;
 //         }
@@ -156,9 +157,8 @@ void createFeatureModels(const boost::filesystem::path &base_dir, const std::str
             string view_id = strs[0];
             strs.clear();
 
-            stringstream path_ss;
-            path_ss << base_dir.string() << "/" << view_id << "_vfh.pcd";
-            string descr_file = path_ss.str();
+
+            string descr_file = PersistenceUtils::getModelDescriptorFileName(base_dir, view_id);
 
             if (!boost::filesystem::exists(descr_file))
             {
@@ -231,9 +231,7 @@ void createFeatureModels(const boost::filesystem::path &base_dir, const std::str
                     crh.compute(*histogram);
 
                     // Save centroid to file
-                    path_ss.str("");
-                    path_ss << base_dir.string() << "/" << view_id << "_centroid.txt";
-                    string centroid_file = path_ss.str();
+                    auto centroid_file = PersistenceUtils::getCentroidFileName(base_dir, view_id);
                     Eigen::Vector3f centroid(centroid4f[0], centroid4f[1], centroid4f[2]);
 
                     // TODO: Move to the PersistenceUtils class
@@ -248,10 +246,7 @@ void createFeatureModels(const boost::filesystem::path &base_dir, const std::str
 
                     std::cout << centroid_file << " was saved\n";
 
-                    stringstream roll_path;
-                    roll_path << base_dir.string() << "/" << view_id << "_crh.pcd";
-
-                    string roll_file = roll_path.str();
+                    auto roll_file = PersistenceUtils::getCRHDescriptorFileName(base_dir, view_id);
 
                     pcl::io::savePCDFileBinary(roll_file.c_str(), *histogram);
                     cout << roll_file << " was saved\n";
@@ -349,7 +344,7 @@ int main(int argc, char **argv)
     // Load the model histograms
     loadFeatureModels(argv[1], extension, models);
     pcl::console::print_highlight("Loaded %d VFH models. Creating training data %s/%s.\n",
-                                  (int)models.size(), training_data_h5_file_name.c_str(), training_data_list_file_name.c_str());
+                                  static_cast<int>(models.size()), training_data_h5_file_name.c_str(), training_data_list_file_name.c_str());
 
     // Convert data into FLANN format
     flann::Matrix<float> data(new float[models.size() * models[0].second.size()], models.size(), models[0].second.size());
@@ -375,7 +370,7 @@ int main(int argc, char **argv)
     models.clear();
 
     // Build the tree index and save it to disk
-    pcl::console::print_error("Building the kdtree index (%s) for %d elements...\n", kdtree_idx_file_name.c_str(), (int)data.rows);
+    pcl::console::print_error("Building the kdtree index (%s) for %d elements...\n", kdtree_idx_file_name.c_str(), static_cast<int>(data.rows));
     flann_distance_metric index(data, flann::LinearIndexParams());
     // flann::Index<flann::ChiSquareDistance<float> > index (data, flann::KDTreeIndexParams (4));
     index.buildIndex();

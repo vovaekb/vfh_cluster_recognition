@@ -263,7 +263,7 @@ void segmentScene(PointCloudPtr &input)
 
 void classifyCluster(const int &ind, PointCloudPtr &cloud)
 {
-    pcl::console::print_info("[classifyCluster] Cluster cloud %i has size: %d\n", ind, (int)cloud->points.size());
+    pcl::console::print_info("[classifyCluster] Cluster cloud %i has size: %d\n", ind, static_cast<int>(cloud->points.size()));
 
     FeatureCloudTypePtr descriptor(new FeatureCloudType);
     CRHCloudTypePtr cluster_crh(new CRHCloudType);

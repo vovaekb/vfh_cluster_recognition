@@ -129,7 +129,7 @@ void TestRunner::runDetector()
     //    cout << "\n\nScene: " << scene_pcd_file << "\n";
     pcl::io::loadPCDFile(test_scene, *scene_cloud);
 
-    pcl::console::print_debug("Scene cloud has %d points\n", (int)scene_cloud->points.size());
+    pcl::console::print_debug("Scene cloud has %d points\n", static_cast<int>(scene_cloud->points.size()));
 
 #ifndef DEBUG_ITERATING_THROUGH_THRESH_RANGE
     recognize(scene_cloud, scene_cloud_filtered);

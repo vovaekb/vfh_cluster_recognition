@@ -216,9 +216,7 @@ void runTests()
 
             cout << "[runTests] Case name: " << case_name << "\n";
 
-            stringstream exper_file_ss;
-            exper_file_ss << experiments_dir << "/" << case_name << ".txt";
-            string exper_file_path = exper_file_ss.str();
+            string exper_file_path = PersistenceUtils::getExperimentCaseFileName(experiments_dir, case_name);;
 
             cout << "Experiment file: " << exper_file_path << "\n";
 
@@ -244,7 +242,7 @@ void runTests()
 
                     pcl::io::loadPCDFile(scene_pcd_path.c_str(), *scene_cloud);
 
-                    //                    pcl::console::print_info("Scene cloud has size: %d\n", (int)scene_cloud->points.size());
+                    //                    pcl::console::print_info("Scene cloud has size: %d\n", static_cast<int>(scene_cloud->points.size()));
 
                     recognize(scene_cloud, scene_cloud_filtered);
 
@@ -271,7 +269,7 @@ void recognizeScene()
 
     pcl::io::loadPCDFile(test_scene.c_str(), *scene_cloud);
 
-    pcl::console::print_info("Scene cloud has size: %d\n", (int)scene_cloud->points.size());
+    pcl::console::print_info("Scene cloud has size: %d\n", static_cast<int>(scene_cloud->points.size()));
 
     recognize(scene_cloud, scene_cloud_filtered);
 
@@ -389,7 +387,7 @@ int main(int argc, char **argv)
         PersistenceUtils::loadFileList(models, training_data_list_file_name);
         flann::load_from_file(data, training_data_h5_file_name, "training_data");
         pcl::console::print_highlight("Training data found. Loaded %d VFH models from %s and %s.\n",
-                                      (int)data.rows, training_data_h5_file_name.c_str(), training_data_list_file_name.c_str());
+                                      static_cast<int>(data.rows), training_data_h5_file_name.c_str(), training_data_list_file_name.c_str());
     }
 
     loadIndex();
