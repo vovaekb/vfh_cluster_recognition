@@ -77,7 +77,7 @@ void loadIndex()
     }
     else
     {
-        flann_index = new flann_distance_metric(data, flann::SavedIndexParams(kdtree_idx_file_name.c_str()));
+        flann_index = new FLANNIndex(data, flann::SavedIndexParams(kdtree_idx_file_name.c_str()));
         flann_index->buildIndex();
     }
 }

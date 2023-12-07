@@ -14,6 +14,7 @@
 #include <flann/flann.h>
 #include <flann/io/hdf5.h>
 #include <fstream>
+#include <memory>
 
 #include "vfh_cluster_classifier/persistence_utils.h"
 #include "vfh_cluster_classifier/nearest_search.h"
@@ -160,7 +161,6 @@ void createFeatureModels(const fs::path &base_dir, const std::string &extension)
             string view_id = strs[0];
             strs.clear();
 
-
             string descr_file = PersistenceUtils::getModelDescriptorFileName(base_dir, view_id);
 
             if (!fs::exists(descr_file))
@@ -185,20 +185,20 @@ void createFeatureModels(const fs::path &base_dir, const std::string &extension)
                 FeatureCloudTypePtr descriptor(new FeatureCloudType);
 
                 // Estimate the normals.
-                pcl::NormalEstimation<PointType, NormalType> normalEstimation;
-                normalEstimation.setInputCloud(view);
+                std::shared_ptr<pcl::NormalEstimation<PointType, NormalType> > normal_estimator;
+                normal_estimator->setInputCloud(view);
 
-                normalEstimation.setRadiusSearch(normal_radius);
+                normal_estimator->setRadiusSearch(normal_radius);
                 pcl::search::KdTree<PointType>::Ptr kdtree(new pcl::search::KdTree<PointType>);
-                normalEstimation.setSearchMethod(kdtree);
+                normal_estimator->setSearchMethod(kdtree);
 
                 // Alternative from local pipeline
                 //              int norm_k = 10;
-                //              normalEstimation.setKSearch(norm_k);
-                normalEstimation.compute(*normals);
+                //              normal_estimator->setKSearch(norm_k);
+                normal_estimator->compute(*normals);
 
                 // VFH estimation object.
-                pcl::VFHEstimation<PointType, NormalType, FeatureType> vfh;
+                std::shared_ptr<pcl::VFHEstimation<PointType, NormalType, FeatureType> > vfh;
                 vfh.setInputCloud(view);
                 vfh.setInputNormals(normals);
                 vfh.setSearchMethod(kdtree);

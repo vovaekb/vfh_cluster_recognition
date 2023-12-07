@@ -48,7 +48,7 @@ auto normal_radius{0.03};
 std::vector<index_score> models_scores;
 vector<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis>> object_hypotheses_;
 
-flann_distance_metric *flann_index;
+std::shared_ptr<FLANNIndex> flann_index;
 
 void createHist(PointCloudPtr &cloud, FeatureCloudTypePtr &descriptor, CRHCloudTypePtr &crh_histogram, Eigen::Vector4f &centroid)
 {
