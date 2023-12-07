@@ -45,26 +45,29 @@
 #include "vfh_cluster_classifier/test_runner.h"
 
 using namespace std;
+using namespace pcl::console;
+using namespace pcl::io;
+namespace fs = boost::filesystem;
 
 /***** Shared parameters ******/
-string base_descr_dir = "clusters_vfh";
-string training_data_path = "training_models";
-string gt_files_dir = "gt_files";
+string base_descr_dir {"clusters_vfh"};
+string training_data_path {"training_models"};
+string gt_files_dir {"gt_files"};
 string gt_file_path;
 string scene_name;
 string test_scene;
 
 // Main algorithm parameters
-bool run_tests(false);
-bool perform_crh(false);
-bool apply_thresh(false);
-int nn_k = 3;     // 6
-int thresh = 195; // 180; // 60
+bool run_tests{false};
+bool perform_crh{false};
+bool apply_thresh{false};
+int nn_k {3};     // 6
+int thresh {195}; // 180; // 60
 float distance_thresh;
 
 std::vector<PointCloudPtr> cluster_clouds;
 std::vector<std::string> recognized_objects;
-string found_model("");
+string found_model{""};
 
 // Main file paths
 string test_scenes_dir;
@@ -99,46 +102,46 @@ void showHelp(char *filename)
 
 void parseCommandLine(int argc, char **argv)
 {
-    if (pcl::console::find_switch(argc, argv, "-h"))
+    if (find_switch(argc, argv, "-h"))
     {
         showHelp(argv[0]);
         exit(0);
     }
 
-    pcl::console::parse_argument(argc, argv, "--test_scenes_dir", test_scenes_dir);
+    parse_argument(argc, argv, "--test_scenes_dir", test_scenes_dir);
 
-    pcl::console::parse_argument(argc, argv, "--test_scene", test_scene);
+    parse_argument(argc, argv, "--test_scene", test_scene);
 
     if (test_scenes_dir == "" && test_scene == "")
     {
-        pcl::console::print_error("Test data directory or test scene should be specified!\n");
+        print_error("Test data directory or test scene should be specified!\n");
         showHelp(argv[0]);
         exit(-1);
     }
 
-    pcl::console::parse_argument(argc, argv, "--train_dir", training_data_path);
+    parse_argument(argc, argv, "--train_dir", training_data_path);
 
-    pcl::console::parse_argument(argc, argv, "--gt_files", gt_files_dir);
+    parse_argument(argc, argv, "--gt_files", gt_files_dir);
 
-    pcl::console::parse_argument(argc, argv, "--exper_dir", experiments_dir);
+    parse_argument(argc, argv, "--exper_dir", experiments_dir);
 
-    pcl::console::parse_argument(argc, argv, "--dist_thresh", distance_thresh);
+    parse_argument(argc, argv, "--dist_thresh", distance_thresh);
 
-    pcl::console::parse_argument(argc, argv, "--th", thresh);
+    parse_argument(argc, argv, "--th", thresh);
 
-    pcl::console::parse_argument(argc, argv, "--k", nn_k);
+    parse_argument(argc, argv, "--k", nn_k);
 
-    if (pcl::console::find_switch(argc, argv, "-thresh"))
+    if (find_switch(argc, argv, "-thresh"))
     {
         apply_thresh = true;
     }
 
-    if (pcl::console::find_switch(argc, argv, "-test"))
+    if (find_switch(argc, argv, "-test"))
     {
         run_tests = true;
     }
 
-    if (pcl::console::find_switch(argc, argv, "-crh"))
+    if (find_switch(argc, argv, "-crh"))
     {
         perform_crh = true;
     }
@@ -160,16 +163,16 @@ void parseCommandLine(int argc, char **argv)
     cout << "perform crh: " << perform_crh << "\n";
 }
 
-void getTrainingObjectsIds(const boost::filesystem::path &base_dir)
+void getTrainingObjectsIds(const fs::path &base_dir)
 {
     std::cout << "Loading training objects names\n";
 
-    if (!boost::filesystem::exists(base_dir) && !boost::filesystem::is_directory(base_dir))
+    if (!fs::exists(base_dir) && !fs::is_directory(base_dir))
         return;
 
-    for (boost::filesystem::directory_iterator it(base_dir); it != boost::filesystem::directory_iterator(); ++it)
+    for (fs::directory_iterator it(base_dir); it != fs::directory_iterator(); ++it)
     {
-        if (boost::filesystem::is_directory(it->status()))
+        if (fs::is_directory(it->status()))
         {
             string object_name = (it->path().filename()).string();
 
@@ -197,7 +200,7 @@ void runTests()
 
     cout << "[runTests]\n";
 
-    if (!boost::filesystem::exists(test_scenes_dir) && !boost::filesystem::is_directory(test_scenes_dir))
+    if (!fs::exists(test_scenes_dir) && !fs::is_directory(test_scenes_dir))
         return;
 
     // TODO: Iterate through all experiment cases
@@ -206,9 +209,9 @@ void runTests()
     // 3. Use each line test_scene_k.pcd in the case_n.txt file to open the test_dir/case_n/test_scene_k.pcd
     // 4. Run recognizer on test_scene_k.pcd
 
-    for (boost::filesystem::directory_iterator it(test_scenes_dir); it != boost::filesystem::directory_iterator(); ++it)
+    for (fs::directory_iterator it(test_scenes_dir); it != fs::directory_iterator(); ++it)
     {
-        if (boost::filesystem::is_regular_file(it->status()) && boost::filesystem::extension(it->path()) == ".txt")
+        if (fs::is_regular_file(it->status()) && fs::extension(it->path()) == ".txt")
         {
             string case_file = (it->path().filename()).string();
             string case_file_path = (it->path()).string();
@@ -230,19 +233,13 @@ void runTests()
                     if (scene_name.empty() || scene_name.at(0) == '#') // || scene_name.substr(0, 10) != "whiteboard")
                         continue;
 
-                    //                    cout << "[runTests] Reading line: " << scene_name << "\n";
-
-                    stringstream scene_ss;
-                    scene_ss << test_scenes_dir << "/" << case_name << "/" << scene_name;
-                    string scene_pcd_path = scene_ss.str();
+                    string scene_pcd_path = PersistenceUtils::getExperimentCaseFileName(test_scenes_dir, case_name, scene_name);
 
                     cout << "[runTests] Scene path: " << scene_pcd_path << "\n";
 
                     PointCloudPtr scene_cloud(new PointCloudType()), scene_cloud_filtered(new PointCloudType());
 
-                    pcl::io::loadPCDFile(scene_pcd_path.c_str(), *scene_cloud);
-
-                    //                    pcl::console::print_info("Scene cloud has size: %d\n", static_cast<int>(scene_cloud->points.size()));
+                    loadPCDFile(scene_pcd_path.c_str(), *scene_cloud);
 
                     recognize(scene_cloud, scene_cloud_filtered);
 
@@ -267,9 +264,9 @@ void recognizeScene()
 {
     PointCloudPtr scene_cloud(new PointCloudType()), scene_cloud_filtered(new PointCloudType());
 
-    pcl::io::loadPCDFile(test_scene.c_str(), *scene_cloud);
+    loadPCDFile(test_scene.c_str(), *scene_cloud);
 
-    pcl::console::print_info("Scene cloud has size: %d\n", static_cast<int>(scene_cloud->points.size()));
+    print_info("Scene cloud has size: %d\n", static_cast<int>(scene_cloud->points.size()));
 
     recognize(scene_cloud, scene_cloud_filtered);
 
@@ -277,9 +274,9 @@ void recognizeScene()
     {
         std::cout << "Estimate accuracy of recognition\n";
 
-        if (!boost::filesystem::exists(gt_files_dir))
+        if (!fs::exists(gt_files_dir))
         {
-            pcl::console::print_error("Ground truth path %s doesn't exist\n", gt_files_dir.c_str());
+            print_error("Ground truth path %s doesn't exist\n", gt_files_dir.c_str());
             exit(-1);
         }
 
@@ -340,7 +337,7 @@ void recognizeScene()
     }
     else
     {
-        pcl::console::print_highlight("No objects found\n");
+        print_highlight("No objects found\n");
     }
 }
 
@@ -376,9 +373,9 @@ int main(int argc, char **argv)
     getTrainingObjectsIds(training_data_path);
 
     // Check if the data has already been saved to disk
-    if (!boost::filesystem::exists(training_data_h5_file_name) || !boost::filesystem::exists(training_data_list_file_name))
+    if (!fs::exists(training_data_h5_file_name) || !fs::exists(training_data_list_file_name))
     {
-        pcl::console::print_error("Could not find training data models files %s and %s!\n",
+        print_error("Could not find training data models files %s and %s!\n",
                                   training_data_h5_file_name.c_str(), training_data_list_file_name.c_str());
         return -1;
     }
@@ -386,7 +383,7 @@ int main(int argc, char **argv)
     {
         PersistenceUtils::loadFileList(models, training_data_list_file_name);
         flann::load_from_file(data, training_data_h5_file_name, "training_data");
-        pcl::console::print_highlight("Training data found. Loaded %d VFH models from %s and %s.\n",
+        print_highlight("Training data found. Loaded %d VFH models from %s and %s.\n",
                                       static_cast<int>(data.rows), training_data_h5_file_name.c_str(), training_data_list_file_name.c_str());
     }
 

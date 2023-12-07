@@ -24,3 +24,5 @@ using NormalCloudTypePtr = NormalCloudType::Ptr;
 
 using vfh_model = std::pair<std::string, std::vector<float>>;
 using flann_distance_metric = flann::Index<flann::ChiSquareDistance<float>>;
+
+using CRHEstimationPtr = pcl::CRHEstimation<PointType, NormalType, CRH90>;

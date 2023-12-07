@@ -9,6 +9,8 @@
 #include "vfh_cluster_classifier/typedefs.h"
 
 using namespace std;
+using namespace pcl::console;
+using namespace pcl::io;
 
 namespace PersistenceUtils
 {
@@ -202,6 +204,13 @@ namespace PersistenceUtils
         stringstream exper_file_ss;
         exper_file_ss << experiments_dir << "/" << case_name << ".txt";
         return exper_file_ss.str();
+    }
+
+    constexpr std::string getExperimentCaseFileName(string test_scenes_dir, string case_name, string scene_name)
+    {
+        stringstream scene_ss;
+        scene_ss << test_scenes_dir << "/" << case_name << "/" << scene_name;
+        return scene_ss.str();
     }
 }
 

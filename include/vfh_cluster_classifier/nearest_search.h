@@ -6,6 +6,7 @@
 
 using namespace pcl::console;
 using namespace pcl::io;
+namespace fs = boost::filesystem;
 
 /**
  * \brief Loads an n-D histogram file as a VFH signature.
@@ -14,7 +15,7 @@ using namespace pcl::io;
  * \param vfh - The resultant VFH signature.
  * \return - True if the loading is successful, false otherwise.
  */
-bool loadHist(const boost::filesystem::path &path, vfh_model &vfh)
+bool loadHist(const fs::path &path, vfh_model &vfh)
 {
     try
     {
@@ -42,7 +43,7 @@ bool loadHist(const boost::filesystem::path &path, vfh_model &vfh)
 
     // Load the PCD file into a point cloud
     FeatureCloudType point;
-    pcl::io::loadPCDFile(path.string(), point);
+    loadPCDFile(path.string(), point);
     vfh.second.resize(308);
 
     std::vector<pcl::PCLPointField> fields;
@@ -69,7 +70,7 @@ void loadIndex()
     std::cout << "FLANN index file: " << kdtree_idx_file_name << "\n";
 
     // Check if the tree index has already been saved to disk
-    if (!boost::filesystem::exists(kdtree_idx_file_name))
+    if (!fs::exists(kdtree_idx_file_name))
     {
         print_error("Could not find kd-tree index in file %s!", kdtree_idx_file_name.c_str());
         return;

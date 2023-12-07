@@ -19,20 +19,23 @@
 #include "vfh_cluster_classifier/nearest_search.h"
 
 using namespace std;
+using namespace pcl::console;
+using namespace pcl::io;
+namespace fs = boost::filesystem;
 
 bool calculate_crh(false);
 bool calculate_vfh(false);
 
 #ifndef DISABLE_COMPUTING_CRH
 // Required for saving CRH histogram to PCD file
-POINT_CLOUD_REGISTER_POINT_STRUCT(pcl::Histogram<90>,
+POINT_CLOUD_REGISTER_POINT_STRUCT(CRH90,
                                   (float[90], histogram, histogram90))
 #endif
 
 string training_dir;
 
-float voxel_leaf_size(0.005);
-float normal_radius(0.03);
+auto voxel_leaf_size{0.005};
+auto normal_radius{0.03};
 
 // /**
 //  * \brief Loads an n-D histogram file as a VFH signature.
@@ -41,7 +44,7 @@ float normal_radius(0.03);
 //  * \param vfh - The resultant VFH signature.
 //  * \return - True if the loading is successful, false otherwise.
 //  */
-// bool loadHist(const boost::filesystem::path &path, vfh_model &vfh)
+// bool loadHist(const fs::path &path, vfh_model &vfh)
 // {
 //     try
 //     {
@@ -69,7 +72,7 @@ float normal_radius(0.03);
 
 //     // Load the PCD file into a point cloud
 //     FeatureCloudType point;
-//     pcl::io::loadPCDFile(path.string(), point);
+//     loadPCDFile(path.string(), point);
 //     vfh.second.resize(308);
 
 //     std::vector<pcl::PCLPointField> fields;
@@ -86,23 +89,23 @@ float normal_radius(0.03);
 //     return true;
 // }
 
-void loadFeatureModels(const boost::filesystem::path &base_dir, const std::string &extension,
+void loadFeatureModels(const fs::path &base_dir, const std::string &extension,
                        std::vector<vfh_model> &models)
 {
     cout << "[loadFeatureModels]\n";
-    if (!boost::filesystem::exists(base_dir) && !boost::filesystem::is_directory(base_dir))
+    if (!fs::exists(base_dir) && !fs::is_directory(base_dir))
         return;
 
-    for (boost::filesystem::directory_iterator it(base_dir); it != boost::filesystem::directory_iterator(); ++it)
+    for (fs::directory_iterator it(base_dir); it != fs::directory_iterator(); ++it)
     {
-        if (boost::filesystem::is_directory(it->status()))
+        if (fs::is_directory(it->status()))
         {
             std::stringstream ss;
             ss << it->path();
-            pcl::console::print_highlight("Loading %s (%lu models loaded so far).\n", ss.str().c_str(), (unsigned long)models.size());
+            print_highlight("Loading %s (%lu models loaded so far).\n", ss.str().c_str(), (unsigned long)models.size());
             loadFeatureModels(it->path(), extension, models);
         }
-        if (boost::filesystem::is_regular_file(it->status()) && boost::filesystem::extension(it->path()) == extension)
+        if (fs::is_regular_file(it->status()) && fs::extension(it->path()) == extension)
         {
             vfh_model m;
             if (loadHist(base_dir / it->path().filename(), m))
@@ -130,27 +133,27 @@ void processCloud(PointCloudPtr &in, PointCloudPtr &out)
     out = temp_cloud;
 }
 
-void createFeatureModels(const boost::filesystem::path &base_dir, const std::string &extension)
+void createFeatureModels(const fs::path &base_dir, const std::string &extension)
 {
     cout << "[createFeatureModels] Loading files in directory: " << base_dir << "\n";
 
-    if (!boost::filesystem::exists(base_dir) && !boost::filesystem::is_directory(base_dir))
+    if (!fs::exists(base_dir) && !fs::is_directory(base_dir))
         return;
 
-    for (boost::filesystem::directory_iterator it(base_dir); it != boost::filesystem::directory_iterator(); ++it)
+    for (fs::directory_iterator it(base_dir); it != fs::directory_iterator(); ++it)
     {
         cout << "Process " << it->path().filename() << "...\n";
-        if (boost::filesystem::is_directory(it->status()))
+        if (fs::is_directory(it->status()))
         {
             std::stringstream ss;
             ss << it->path();
-            //        pcl::console::print_highlight ("Loading %s (%lu models loaded so far).\n", ss.str ().c_str (), (unsigned long)models.size ());
+            //        print_highlight ("Loading %s (%lu models loaded so far).\n", ss.str ().c_str (), (unsigned long)models.size ());
             createFeatureModels(it->path(), extension);
         }
 
         string file_name = (it->path().filename()).string();
 
-        if (boost::filesystem::is_regular_file(it->status()) && boost::filesystem::extension(it->path()) == extension && !strstr(file_name.c_str(), "vfh") && !strstr(file_name.c_str(), "crh"))
+        if (fs::is_regular_file(it->status()) && fs::extension(it->path()) == extension && !strstr(file_name.c_str(), "vfh") && !strstr(file_name.c_str(), "crh"))
         {
             std::vector<string> strs;
             boost::split(strs, file_name, boost::is_any_of("."));
@@ -160,7 +163,7 @@ void createFeatureModels(const boost::filesystem::path &base_dir, const std::str
 
             string descr_file = PersistenceUtils::getModelDescriptorFileName(base_dir, view_id);
 
-            if (!boost::filesystem::exists(descr_file))
+            if (!fs::exists(descr_file))
             {
                 PointCloudPtr view(new PointCloudType());
 
@@ -169,7 +172,7 @@ void createFeatureModels(const boost::filesystem::path &base_dir, const std::str
 
                 cout << "Compute VFH for " << full_file_name << "\n";
 
-                pcl::io::loadPCDFile(full_file_name.c_str(), *view);
+                loadPCDFile(full_file_name.c_str(), *view);
 
                 cout << "Cloud has " << view->points.size() << " points\n";
 
@@ -210,7 +213,7 @@ void createFeatureModels(const boost::filesystem::path &base_dir, const std::str
 
                 cout << "VFH descriptor has size: " << descriptor->points.size() << "\n";
 
-                pcl::io::savePCDFileBinary(descr_file.c_str(), *descriptor);
+                savePCDFileBinary(descr_file.c_str(), *descriptor);
                 cout << descr_file << " was saved\n";
 
 #ifndef DISABLE_COMPUTING_CRH
@@ -221,7 +224,7 @@ void createFeatureModels(const boost::filesystem::path &base_dir, const std::str
                     CRHCloudType::Ptr histogram(new CRHCloudType);
 
                     // CRH estimation object
-                    pcl::CRHEstimation<PointType, NormalType, CRH90> crh;
+                    CRHEstimationPtr crh;
                     crh.setInputCloud(view);
                     crh.setInputNormals(normals);
                     Eigen::Vector4f centroid4f;
@@ -248,14 +251,14 @@ void createFeatureModels(const boost::filesystem::path &base_dir, const std::str
 
                     auto roll_file = PersistenceUtils::getCRHDescriptorFileName(base_dir, view_id);
 
-                    pcl::io::savePCDFileBinary(roll_file.c_str(), *histogram);
+                    savePCDFileBinary(roll_file.c_str(), *histogram);
                     cout << roll_file << " was saved\n";
                 }
 #endif
             }
             else
             {
-                pcl::console::print_highlight("Descriptor file %s already exists\n", descr_file.c_str());
+                print_highlight("Descriptor file %s already exists\n", descr_file.c_str());
             }
         }
     }
@@ -285,17 +288,17 @@ void parseCommandLine(int argc, char **argv)
 
     training_dir = string(argv[1]);
 
-    if (pcl::console::find_switch(argc, argv, "-vfh"))
+    if (find_switch(argc, argv, "-vfh"))
     {
         calculate_vfh = true;
     }
 
-    if (pcl::console::find_switch(argc, argv, "-crh"))
+    if (find_switch(argc, argv, "-crh"))
     {
         calculate_crh = true;
     }
 
-    if (pcl::console::find_switch(argc, argv, "-h"))
+    if (find_switch(argc, argv, "-h"))
     {
         showHelp(argv[0]);
         exit(0);
@@ -321,7 +324,7 @@ int main(int argc, char **argv)
     std::vector<vfh_model> models;
 
     // Remove previously saved flann index and data files
-    if (boost::filesystem::exists(kdtree_idx_file_name))
+    if (fs::exists(kdtree_idx_file_name))
     {
         if (remove(kdtree_idx_file_name.c_str()) != 0)
             perror("Error deleting old flann index file");
@@ -329,7 +332,7 @@ int main(int argc, char **argv)
             cout << "Old flann index file was successfully deleted\n";
     }
 
-    if (boost::filesystem::exists(training_data_h5_file_name))
+    if (fs::exists(training_data_h5_file_name))
     {
         if (remove(training_data_h5_file_name.c_str()) != 0)
             perror("Error deleting old training data file");
@@ -343,7 +346,7 @@ int main(int argc, char **argv)
 #ifndef VFH_COMPUTE_DEBUG
     // Load the model histograms
     loadFeatureModels(argv[1], extension, models);
-    pcl::console::print_highlight("Loaded %d VFH models. Creating training data %s/%s.\n",
+    print_highlight("Loaded %d VFH models. Creating training data %s/%s.\n",
                                   static_cast<int>(models.size()), training_data_h5_file_name.c_str(), training_data_list_file_name.c_str());
 
     // Convert data into FLANN format
@@ -370,7 +373,7 @@ int main(int argc, char **argv)
     models.clear();
 
     // Build the tree index and save it to disk
-    pcl::console::print_error("Building the kdtree index (%s) for %d elements...\n", kdtree_idx_file_name.c_str(), static_cast<int>(data.rows));
+    print_error("Building the kdtree index (%s) for %d elements...\n", kdtree_idx_file_name.c_str(), static_cast<int>(data.rows));
     flann_distance_metric index(data, flann::LinearIndexParams());
     // flann::Index<flann::ChiSquareDistance<float> > index (data, flann::KDTreeIndexParams (4));
     index.buildIndex();

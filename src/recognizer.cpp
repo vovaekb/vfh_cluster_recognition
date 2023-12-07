@@ -38,8 +38,12 @@
 
 #include "vfh_cluster_classifier/recognizer.h"
 
-float voxel_leaf_size(0.001); // (0.005);
-float normal_radius(0.03);
+using namespace pcl::console;
+using namespace pcl::io;
+namespace fs = boost::filesystem;
+
+auto voxel_leaf_size{0.001}; // (0.005);
+auto normal_radius{0.03};
 
 std::vector<index_score> models_scores;
 vector<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis>> object_hypotheses_;
@@ -263,7 +267,7 @@ void segmentScene(PointCloudPtr &input)
 
 void classifyCluster(const int &ind, PointCloudPtr &cloud)
 {
-    pcl::console::print_info("[classifyCluster] Cluster cloud %i has size: %d\n", ind, static_cast<int>(cloud->points.size()));
+    print_info("[classifyCluster] Cluster cloud %i has size: %d\n", ind, static_cast<int>(cloud->points.size()));
 
     FeatureCloudTypePtr descriptor(new FeatureCloudType);
     CRHCloudTypePtr cluster_crh(new CRHCloudType);
@@ -274,9 +278,9 @@ void classifyCluster(const int &ind, PointCloudPtr &cloud)
     //    cout << "Cluster CRH has size: " << cluster_crh->points.size() << "\n";
 
     //    if(cluster_crh->points.size())
-    //        pcl::console::print_highlight("Cluster centroid: %f %f %f\n", cluster_centroid[0], cluster_centroid[1], cluster_centroid[2]);
+    //        print_highlight("Cluster centroid: %f %f %f\n", cluster_centroid[0], cluster_centroid[1], cluster_centroid[2]);
 
-    pcl::console::print_highlight("Preparing data for K search ...\n");
+    print_highlight("Preparing data for K search ...\n");
 
     float *hist = descriptor->points[0].histogram;
     int size_feat = sizeof(descriptor->points[0].histogram) / sizeof(float);
@@ -295,7 +299,7 @@ void classifyCluster(const int &ind, PointCloudPtr &cloud)
     //    histogram.second.clear();
 
     // Output the results on the screen
-    pcl::console::print_highlight("The closest %d neighbors for cluster %d are:\n", nn_k, ind);
+    print_highlight("The closest %d neighbors for cluster %d are:\n", nn_k, ind);
 
     for (int i = 0; i < nn_k; i++)
     {
@@ -309,7 +313,7 @@ void classifyCluster(const int &ind, PointCloudPtr &cloud)
         boost::split(strs, vfh_model_path, boost::is_any_of("/"));
         std::string model_name = strs[strs.size() - 2];
 
-        pcl::console::print_info("    %d - %s (%d) with distance of: %f\n",
+        print_info("    %d - %s (%d) with distance of: %f\n",
                                  i, model_name.c_str(), k_indices[0][i], k_distances[0][i]);
 
         float score = k_distances[0][i];
@@ -331,7 +335,7 @@ void classifyCluster(const int &ind, PointCloudPtr &cloud)
             // Clouds for storing object's cluster and model
             PointCloudPtr model_cloud(new PointCloudType);
 
-            pcl::io::loadPCDFile<PointType>(model_cloud_file.c_str(), *model_cloud);
+            loadPCDFile<PointType>(model_cloud_file.c_str(), *model_cloud);
 
             cout << "Model cloud has size: " << model_cloud->points.size() << "\n";
 
@@ -353,7 +357,7 @@ void classifyCluster(const int &ind, PointCloudPtr &cloud)
             string model_crh_file = model_path_ss.str();
 
             cout << "Model CRH histogram file: " << model_crh_file << "\n";
-            pcl::io::loadPCDFile(model_crh_file, *model_crh);
+            loadPCDFile(model_crh_file, *model_crh);
 
             cout << model_crh_file << " histogram has size: " << model_crh->points.size() << "\n";
 
@@ -365,7 +369,7 @@ void classifyCluster(const int &ind, PointCloudPtr &cloud)
             PersistenceUtils::getCentroidFromFile(centroid_file, model_centroid);
 
             std::cout << "Model centroid is loaded from file " << centroid_file << "\n";
-            pcl::console::print_highlight("Model centroid: %f %f %f\n", model_centroid[0], model_centroid[1], model_centroid[2]);
+            print_highlight("Model centroid: %f %f %f\n", model_centroid[0], model_centroid[1], model_centroid[2]);
 
             pcl::CRHAlignment<PointType, 90> alignment;
             alignment.setInputAndTargetView(cloud, model_cloud);
@@ -426,10 +430,10 @@ void recognize(PointCloudPtr &cloud, PointCloudPtr &cloud_filtered)
     //    cout << "\n\n[recognize] Point cloud has size: " << cloud->points.size() << "\n";
 
     // Clear descriptors directory
-    if (boost::filesystem::exists(base_descr_dir))
+    if (fs::exists(base_descr_dir))
     {
-        boost::filesystem::remove_all(base_descr_dir);
-        boost::filesystem::create_directory(base_descr_dir);
+        fs::remove_all(base_descr_dir);
+        fs::create_directory(base_descr_dir);
     }
 
     preprocessCloud(cloud, cloud_filtered);
@@ -444,7 +448,7 @@ void recognize(PointCloudPtr &cloud, PointCloudPtr &cloud_filtered)
 
         string cluster_file = path_ss.str();
 
-        pcl::io::savePCDFileASCII(cluster_file.c_str(), *cluster_cloud);
+        savePCDFileASCII(cluster_file.c_str(), *cluster_cloud);
 
         std::cout << cluster_file << " was saved\n";
 
@@ -496,7 +500,7 @@ void recognize(PointCloudPtr &cloud, PointCloudPtr &cloud_filtered)
     // Find the best candidate over all the clusters
     if (models_scores.size() > 0)
     {
-        pcl::console::print_highlight("The best candidates over all the clusters\n");
+        print_highlight("The best candidates over all the clusters\n");
 
         for (auto &model_score : models_scores)
         {
@@ -531,7 +535,7 @@ void recognize(PointCloudPtr &cloud, PointCloudPtr &cloud_filtered)
 
         index_score best_model = models_scores[0];
 
-        pcl::console::print_highlight("The best candidate\n");
+        print_highlight("The best candidate\n");
         printf("    %s: %f\n\n", best_model.model_id.c_str(), best_model.score);
 
         cout << "\n\n";

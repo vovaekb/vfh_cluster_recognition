@@ -12,15 +12,18 @@
 #include <pcl/filters/voxel_grid.h>
 
 using namespace std;
+using namespace pcl::console;
+using namespace pcl::io;
+namespace fs = boost::filesystem;
 
 string samples_path;
 string output_path;
 
-bool perform_scaling(false);
+bool perform_scaling{false};
 
 // Static parameters
-int clouds_number(42);
-float voxel_leaf_size_(0.001);
+int clouds_number{42};
+float voxel_leaf_size_{0.001};
 
 // Containers for objects
 vector<PointCloudPtr> clouds;
@@ -59,25 +62,25 @@ void process_cloud(PointCloudPtr &cloud, int index)
     // Save point cloud
     cout << "Save cloud\n";
     string output_pcd = output_path + "/" + boost::to_string(index) + ".pcd";
-    pcl::io::savePCDFileASCII(output_pcd, *cloud);
+    savePCDFileASCII(output_pcd, *cloud);
 
     cout << "Point cloud was saved as " + output_pcd + "\n";
 }
 
 void process()
 {
-    if (!boost::filesystem::exists(output_path))
-        boost::filesystem::create_directory(output_path);
+    if (!fs::exists(output_path))
+        fs::create_directory(output_path);
 
     // Load point clouds
     for (int i = 1; i <= clouds_number; i++)
     {
         string pcd_path = samples_path + "/" + boost::to_string(i) + ".pcd";
 
-        if (boost::filesystem::exists(pcd_path))
+        if (fs::exists(pcd_path))
         {
             PointCloudPtr cloud(new PointCloudType());
-            if (pcl::io::loadPCDFile(pcd_path, *cloud) != 0)
+            if (loadPCDFile(pcd_path, *cloud) != 0)
             {
                 return;
             }
@@ -102,13 +105,13 @@ void showHelp(char *filename)
 
 void parseCommandLine(int argc, char **argv)
 {
-    if (pcl::console::find_switch(argc, argv, "-h"))
+    if (find_switch(argc, argv, "-h"))
     {
         showHelp(argv[0]);
         exit(0);
     }
 
-    pcl::console::parse_argument(argc, argv, "--samples_path", samples_path);
+    parse_argument(argc, argv, "--samples_path", samples_path);
 
     if (samples_path == "")
     {
@@ -117,19 +120,19 @@ void parseCommandLine(int argc, char **argv)
         exit(-1);
     }
 
-    pcl::console::parse_argument(argc, argv, "--output_path", output_path);
+    parse_argument(argc, argv, "--output_path", output_path);
 
     if (output_path == "")
     {
         output_path = output_path + "_scaled";
     }
 
-    if (pcl::console::find_switch(argc, argv, "-scale"))
+    if (find_switch(argc, argv, "-scale"))
     {
         perform_scaling = true;
     }
 
-    pcl::console::parse_argument(argc, argv, "--clouds_n", clouds_number);
+    parse_argument(argc, argv, "--clouds_n", clouds_number);
 }
 
 int main(int argc, char **argv)

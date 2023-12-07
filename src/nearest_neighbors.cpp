@@ -18,6 +18,7 @@
 
 using namespace pcl::console;
 using namespace pcl::io;
+namespace fs = boost::filesystem;
 
 int main(int argc, char **argv)
 {
@@ -68,7 +69,7 @@ int main(int argc, char **argv)
     flann::Matrix<float> k_distances;
     flann::Matrix<float> data;
     // Check if the data has already been saved to disk
-    if (!boost::filesystem::exists("training_data.h5") || !boost::filesystem::exists("training_data.list"))
+    if (!fs::exists("training_data.h5") || !fs::exists("training_data.list"))
     {
         print_error("Could not find training data models files %s and %s!\n",
                                   training_data_h5_file_name.c_str(), training_data_list_file_name.c_str());
@@ -83,7 +84,7 @@ int main(int argc, char **argv)
     }
 
     // Check if the tree index has already been saved to disk
-    if (!boost::filesystem::exists(kdtree_idx_file_name))
+    if (!fs::exists(kdtree_idx_file_name))
     {
         print_error("Could not find kd-tree index in file %s!", kdtree_idx_file_name.c_str());
         return (-1);
@@ -101,9 +102,9 @@ int main(int argc, char **argv)
         print_info("    %d - %s (%d) with a distance of: %f\n",
                                  i, models.at(k_indices[0][i]).first.c_str(), k_indices[0][i], k_distances[0][i]);
 
-    float best_dist = std::numeric_limits<float>::infinity();
-    int best_index = -1;
-    for (int i = 0; i < k; ++i)
+    auto best_dist = std::numeric_limits<float>::infinity();
+    auto best_index = -1;
+    for (auto i = 0; i < k; ++i)
     {
         if (k_distances[0][i] < best_dist)
         {

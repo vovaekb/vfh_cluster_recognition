@@ -7,6 +7,10 @@
 #include "vfh_cluster_classifier/recognizer.h"
 #include "vfh_cluster_classifier/test_runner.h"
 
+using namespace pcl::console;
+using namespace pcl::io;
+namespace fs = boost::filesystem;
+
 TestRunner::TestRunner(const string &tests_base_path, string test_setup_name) : tests_base_path_(tests_base_path), test_setup_name_(test_setup_name)
 {
     tests_base_path_ = tests_base_path_ + "/" + test_setup_name_;
@@ -21,8 +25,8 @@ void TestRunner::initTests()
 {
     std::cout << "[TestRunner::initTests]\n";
 
-    if (!boost::filesystem::exists(tests_base_path_))
-        boost::filesystem::create_directories(tests_base_path_);
+    if (!fs::exists(tests_base_path_))
+        fs::create_directories(tests_base_path_);
 
     stringstream test_path_ss;
     test_path_ss << tests_base_path_ << "/setup.txt";
@@ -79,12 +83,12 @@ void TestRunner::iterateTestScenes()
 {
     pcl::console::print_info("Iterate through the test scenes ...\n");
 
-    boost::filesystem::path test_scenes_path = test_scenes_dir;
-    boost::filesystem::directory_iterator end_itr;
+    fs::path test_scenes_path = test_scenes_dir;
+    fs::directory_iterator end_itr;
 
-    for (boost::filesystem::directory_iterator iter(test_scenes_path); iter != end_itr; ++iter)
+    for (fs::directory_iterator iter(test_scenes_path); iter != end_itr; ++iter)
     {
-        if (boost::filesystem::extension(iter->path()) == ".pcd")
+        if (fs::extension(iter->path()) == ".pcd")
         {
             test_scene = (iter->path()).string();
 
@@ -106,7 +110,7 @@ void TestRunner::iterateTestScenes()
 
             pcl::console::print_debug("gt file path: %s\n", gt_file_path.c_str());
 
-            if (!boost::filesystem::exists(gt_file_path))
+            if (!fs::exists(gt_file_path))
             {
                 pcl::console::print_error("Ground truth path %s doesn't exist\n", gt_file_path.c_str());
             }
@@ -127,7 +131,7 @@ void TestRunner::runDetector()
     //
     //    cout << "\n\n ---------------- Loading scene ---------------------- \n\n";
     //    cout << "\n\nScene: " << scene_pcd_file << "\n";
-    pcl::io::loadPCDFile(test_scene, *scene_cloud);
+    loadPCDFile(test_scene, *scene_cloud);
 
     pcl::console::print_debug("Scene cloud has %d points\n", static_cast<int>(scene_cloud->points.size()));
 
