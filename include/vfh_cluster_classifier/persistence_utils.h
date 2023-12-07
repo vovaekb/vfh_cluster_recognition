@@ -175,6 +175,34 @@ namespace PersistenceUtils
             return false;
         }
     }
+
+    constexpr std::string getModelDescriptorFileName(string base_dir, string view_id)
+    {
+        stringstream path_ss;
+        path_ss << base_dir.string() << "/" << view_id << "_vfh.pcd";
+        return path_ss.str();
+    }
+
+    constexpr std::string getCentroidFileName(string base_dir, string view_id)
+    {
+        stringstream path_ss;
+        path_ss << base_dir.string() << "/" << view_id << "_centroid.txt";
+        return path_ss.str();
+    }
+
+    constexpr std::string getCRHDescriptorFileName(string base_dir, string view_id)
+    {
+        stringstream path_ss;
+        path_ss << base_dir.string() << "/" << view_id << "_crh.pcd";
+        return path_ss.str();
+    }
+
+    constexpr std::string getExperimentCaseFileName(string experiments_dir, string case_name)
+    {
+        stringstream exper_file_ss;
+        exper_file_ss << experiments_dir << "/" << case_name << ".txt";
+        return exper_file_ss.str();
+    }
 }
 
 #endif // PERSISTENCE_UTILS_H
