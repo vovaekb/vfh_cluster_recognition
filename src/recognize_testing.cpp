@@ -120,15 +120,10 @@ void parseCommandLine(int argc, char **argv)
     }
 
     parse_argument(argc, argv, "--train_dir", training_data_path);
-
     parse_argument(argc, argv, "--gt_files", gt_files_dir);
-
     parse_argument(argc, argv, "--exper_dir", experiments_dir);
-
     parse_argument(argc, argv, "--dist_thresh", distance_thresh);
-
     parse_argument(argc, argv, "--th", thresh);
-
     parse_argument(argc, argv, "--k", nn_k);
 
     if (find_switch(argc, argv, "-thresh"))

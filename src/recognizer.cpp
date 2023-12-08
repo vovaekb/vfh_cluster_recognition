@@ -11,6 +11,7 @@
 #include <pcl/point_types.h>
 #include <pcl/console/print.h>
 #include <pcl/io/pcd_io.h>
+#include <pcl/memory.h>
 #include <pcl/search/search.h>
 #include <pcl/search/kdtree.h>
 #include <pcl/filters/voxel_grid.h>
@@ -193,11 +194,13 @@ void segmentScene(PointCloudPtr &input)
     //    cout << "[segmentScene] Input cloud has size: " << input->points.size() << "\n";
 
     pcl::search::Search<PointType>::Ptr tree = boost::shared_ptr<pcl::search::Search<PointType>>(new pcl::search::KdTree<PointType>);
-    PointCloudPtr cloud_p(new PointCloudType()), cloud_f(new PointCloudType());
+    PointCloudPtr cloud_p = pcl::make_shared <PointCloudType>();
+    PointCloudPtr cloud_f = pcl::make_shared <PointCloudType>();
 
     // Segmentation plane
-    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients());
-    pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
+    pcl::ModelCoefficients::Ptr coefficients = pcl::make_shared<pcl::ModelCoefficients>();
+    pcl::PointIndices::ConstPtr inliers = pcl::make_shared<pcl::PointIndices>();
+
     // Create segmentation object
     pcl::SACSegmentation<PointType> seg;
     seg.setModelType(pcl::SACMODEL_PLANE);
@@ -206,10 +209,10 @@ void segmentScene(PointCloudPtr &input)
     seg.setDistanceThreshold(0.01); // 0.03 - default
 
     // Segmentation
-    seg.setInputCloud(input);
+    seg.setInputCloud(input->makeShared());
     seg.segment(*inliers, *coefficients);
     pcl::ExtractIndices<PointType> extract;
-    extract.setInputCloud(input);
+    extract.setInputCloud(input->makeShared());
     extract.setIndices(inliers);
     extract.setNegative(false);
     extract.filter(*cloud_p);
@@ -222,17 +225,17 @@ void segmentScene(PointCloudPtr &input)
     PointCloudPtr colored_cloud;
 
     // RegionGrowingRGB segmentation
-    pcl::RegionGrowingRGB<PointType> reg;
-    reg.setInputCloud(input);
-    reg.setSearchMethod(tree);
-    reg.setDistanceThreshold(10);
-    reg.setPointColorThreshold(6);
-    reg.setRegionColorThreshold(5);
-    reg.setMinClusterSize(500); // 300 - previous // 400 // 600 - default
+    std::shared_ptr<pcl::RegionGrowingRGB<PointType>> reg;
+    reg->setInputCloud(input);
+    reg->setSearchMethod(tree);
+    reg->setDistanceThreshold(10);
+    reg->setPointColorThreshold(6);
+    reg->setRegionColorThreshold(5);
+    reg->setMinClusterSize(500); // 300 - previous // 400 // 600 - default
 
-    reg.extract(clusters);
+    reg->extract(clusters);
 
-    colored_cloud = reg.getColoredCloud();
+    colored_cloud = reg->getColoredCloud();
 
     //    string colored_cloud_pcd = "clusters_cloud.pcd";
     //    pcl::io::savePCDFileASCII(colored_cloud_pcd.c_str(), *colored_cloud);

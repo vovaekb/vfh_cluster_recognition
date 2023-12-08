@@ -199,17 +199,17 @@ void createFeatureModels(const fs::path &base_dir, const std::string &extension)
 
                 // VFH estimation object.
                 std::shared_ptr<pcl::VFHEstimation<PointType, NormalType, FeatureType> > vfh;
-                vfh.setInputCloud(view);
-                vfh.setInputNormals(normals);
-                vfh.setSearchMethod(kdtree);
+                vfh->setInputCloud(view->makeShared());
+                vfh->setInputNormals(normals);
+                vfh->setSearchMethod(kdtree);
                 // Optionally, we can normalize the bins of the resulting histogram,
                 // using the total number of points.
-                vfh.setNormalizeBins(true);
+                vfh->setNormalizeBins(true);
                 // Also, we can normalize the SDC with the maximum size found between
                 // the centroid and any of the cluster's points.
-                vfh.setNormalizeDistance(false);
+                vfh->setNormalizeDistance(false);
 
-                vfh.compute(*descriptor);
+                vfh->compute(*descriptor);
 
                 cout << "VFH descriptor has size: " << descriptor->points.size() << "\n";
 
