@@ -52,12 +52,23 @@ struct index_score
 // A struct for storing alignment results
 struct ObjectHypothesis
 {
+    ObjectHypothesis(ObjectHypothesis&& o)
+    {
+        copyPointCloud(*(o.model_template), *model_template);
+        // TODO: copy transformation
+        icp_score = o.icp_score;
+        model_id = o.model_id;
+        
+        o.model_template.reset(new PointCloud);
+        o.icp_score = 0;
+    }
     std::string model_id;
-    PointCloudPtr model_template;
+    FeatureCloud model_template;
     float icp_score;
     Eigen::Matrix4f transformation;
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
 
 // vector<string> best_candidate_names;
 // vector<float> best_candidate_scores;
