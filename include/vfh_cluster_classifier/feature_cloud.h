@@ -39,6 +39,8 @@ public:
 
     ~FeatureCloud();
 
+    FeatureCloud(FeatureCloud&& f);
+
     // Process the given cloud
     void setInputCloud(PointCloudPtr xyz, const string &cloud_type);
     // Load and process point cloud in the given PCD
