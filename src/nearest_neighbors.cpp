@@ -65,9 +65,9 @@ int main(int argc, char **argv)
     std::string training_data_list_file_name = "training_data.list";
 
     std::vector<vfh_model> models;
-    flann::Matrix<int> k_indices;
-    flann::Matrix<float> k_distances;
-    flann::Matrix<float> data;
+    FLANNMatrixInt k_indices;
+    FLANNMatrixFloat k_distances;
+    FLANNMatrixFloat data;
     // Check if the data has already been saved to disk
     if (!fs::exists("training_data.h5") || !fs::exists("training_data.list"))
     {
@@ -91,7 +91,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        flann_distance_metric index(data, flann::SavedIndexParams("kdtree.idx"));
+        FLANNIndex index(data, flann::SavedIndexParams("kdtree.idx"));
         index.buildIndex();
         nearestKSearch(index, histogram, k, k_indices, k_distances);
     }

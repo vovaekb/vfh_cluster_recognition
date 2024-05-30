@@ -1,10 +1,3 @@
-// #define THRESH_DISABLE
-// #define ENABLE_DISTANCE_THRESH
-#define DISABLE_SINGLE_OBJECT_RECOGNITION
-// #define ENABLE_CRH_ALIGNMENT
-#define DISABLE_CRH_FEATURES
-// #define DEBUG_RUN_TIME_TEST
-
 #define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
 
 #include <pcl/point_cloud.h>
@@ -43,7 +36,7 @@ using namespace pcl::console;
 using namespace pcl::io;
 namespace fs = boost::filesystem;
 
-auto voxel_leaf_size{0.001}; // (0.005);
+auto voxel_leaf_size{0.001};
 auto normal_radius{0.03};
 
 std::vector<index_score> models_scores;
@@ -55,22 +48,6 @@ void createHist(PointCloudPtr &cloud, FeatureCloudTypePtr &descriptor, CRHCloudT
 {
     cout << "Create VFH histogram...\n";
 
-    //    std::cout << "XYZRGB cloud has size: " << cloud->points.size() << "\n";
-
-    //    typedef pcl::PointXYZ PointDT;
-    //    pcl::PointCloud<PointDT>::Ptr depth_cloud (new pcl::PointCloud<PointDT>);
-
-    //    for(size_t i = 0; i < cloud->points.size(); i++)
-    //    {
-    //        PointDT p;
-    //        p.x = cloud->points[i].x;
-    //        p.y = cloud->points[i].y;
-    //        p.z = cloud->points[i].z;
-    //        depth_cloud->push_back(p);
-    //    }
-
-    //    std::cout << "XYZ cloud has size: " << depth_cloud->points.size() << "\n";
-
     // Data structures
     NormalCloudTypePtr normals(new NormalCloudType);
 
@@ -78,7 +55,7 @@ void createHist(PointCloudPtr &cloud, FeatureCloudTypePtr &descriptor, CRHCloudT
 
     // estimate normals
     pcl::NormalEstimation<PointType, NormalType> normalEstimation;
-    normalEstimation.setInputCloud(cloud); // depth_cloud
+    normalEstimation.setInputCloud(cloud);
 
     normalEstimation.setRadiusSearch(normal_radius);
     pcl::search::KdTree<PointType>::Ptr kdtree(new pcl::search::KdTree<PointType>);
@@ -89,18 +66,17 @@ void createHist(PointCloudPtr &cloud, FeatureCloudTypePtr &descriptor, CRHCloudT
     //              normalEstimation.setKSearch(norm_k);
     normalEstimation.compute(*normals);
 
-    //    cout << "[createHist] Normal cloud has size: " << normals->points.size() << "\n";
-    //    cout << "[createHist] Point cloud has size: " << cloud->points.size() << "\n";
+    PCL_INFO("Normal point cloud has %d points\n", static_cast<int>(normals->points.size()));
+    PCL_INFO("Point cloud has %d points\n", static_cast<int>(cloud->points.size()));
 
-#ifdef DEBUG_RUN_TIME_TEST
+
     std::ofstream out;
     out.open("vfh_time.txt", std::ios::app);
 
     clock_t t_start = clock();
-#endif
     // calculate vfh
     pcl::VFHEstimation<PointType, NormalType, FeatureType> vfh;
-    vfh.setInputCloud(cloud); // depth_cloud
+    vfh.setInputCloud(cloud);
     vfh.setInputNormals(normals);
     vfh.setSearchMethod(kdtree);
     // Optionally, we can normalize the bins of the resulting histogram,
@@ -112,13 +88,11 @@ void createHist(PointCloudPtr &cloud, FeatureCloudTypePtr &descriptor, CRHCloudT
 
     vfh.compute(*descriptor);
 
-#ifdef DEBUG_RUN_TIME_TEST
     double calc_time = (double)(clock() - t_start) / CLOCKS_PER_SEC;
     PCL_INFO("Computing time: %.3fs\n", calc_time);
 
     out << calc_time << "\n";
     out.close();
-#endif
 
     cout << "VFH descriptor has size: " << descriptor->points.size() << "\n\n";
 
@@ -129,7 +103,6 @@ void createHist(PointCloudPtr &cloud, FeatureCloudTypePtr &descriptor, CRHCloudT
     //    pcl::io::savePCDFileBinary(descr_file.c_str(), *descriptor);
     //    cout << "[createHist] " << descr_file << " was saved\n";
 
-#ifndef DISABLE_CRH_FEATURES
     if (perform_crh)
     {
         std::cout << "Computing CRH histogram...\n";
@@ -138,30 +111,29 @@ void createHist(PointCloudPtr &cloud, FeatureCloudTypePtr &descriptor, CRHCloudT
 
         // CRH estimation object
         pcl::CRHEstimation<PointDT, NormalType, CRH90> crh;
-        crh.setInputCloud(depth_cloud); // cloud);
+        crh.setInputCloud(cloud);
         crh.setInputNormals(normals);
 
-        pcl::compute3DCentroid(*depth_cloud, centroid); // cloud
+        pcl::compute3DCentroid(*cloud, centroid);
         crh.setCentroid(centroid);
 
         crh.compute(*crh_histogram);
         crh.std::cout << "CRH computing complete\n";
 
-        //        stringstream path_ss;
-        //        path_ss << base_descr_dir << "/cluster_" << ind << "_crh.pcd"; // ind is a parameter of method
+        stringstream path_ss;
+        path_ss << base_descr_dir << "/cluster_" << ind << "_crh.pcd"; // ind is a parameter of method
 
-        //        string roll_file = path_ss.str();
+        string roll_file = path_ss.str();
 
-        //        pcl::io::savePCDFileBinary(roll_file.c_str(), *crh_histogram);
-        //        cout << roll_file << " was saved\n";
+        pcl::io::savePCDFileBinary(roll_file.c_str(), *crh_histogram);
+        cout << roll_file << " was saved\n";
     }
-#endif
 }
 
 void preprocessCloud(PointCloudPtr &input, PointCloudPtr &output)
 {
     cout << "Preprocess cloud ...\n";
-    //    cout << "Input cloud has size: " << input->points.size() << "\n";
+    PCL_INFO("Input cloud has size: %d\n", static_cast<int>(input->points.size()));
 
     vector<int> mapping;
     pcl::removeNaNFromPointCloud(*input, *input, mapping);
@@ -176,7 +148,6 @@ void preprocessCloud(PointCloudPtr &input, PointCloudPtr &output)
 
     output = temp_cloud;
 
-#ifdef ENABLE_DISTANCE_THRESH
     // Distance thresholding
     const float depth_limit = 0.6;
     pcl::PassThrough<PointType> pass;
@@ -184,14 +155,13 @@ void preprocessCloud(PointCloudPtr &input, PointCloudPtr &output)
     pass.setFilterFieldName("z");
     pass.setFilterLimits(0.0, distance_thresh); // depth_limit);
     pass.filter(*output);
-#endif
 
-    //    cout << "Output cloud has size: " << output->points.size() << "\n";
+    PCL_INFO("Output cloud has size: %d\n", static_cast<int>(output->points.size()));
 }
 
 void segmentScene(PointCloudPtr &input)
 {
-    //    cout << "[segmentScene] Input cloud has size: " << input->points.size() << "\n";
+    PCL_INFO("Input cloud has size: %d\n", static_cast<int>(input->points.size()));
 
     pcl::search::Search<PointType>::Ptr tree = boost::shared_ptr<pcl::search::Search<PointType>>(new pcl::search::KdTree<PointType>);
     PointCloudPtr cloud_p = pcl::make_shared <PointCloudType>();
@@ -231,16 +201,12 @@ void segmentScene(PointCloudPtr &input)
     reg->setDistanceThreshold(10);
     reg->setPointColorThreshold(6);
     reg->setRegionColorThreshold(5);
-    reg->setMinClusterSize(500); // 300 - previous // 400 // 600 - default
+    reg->setMinClusterSize(500);
 
     reg->extract(clusters);
 
     colored_cloud = reg->getColoredCloud();
 
-    //    string colored_cloud_pcd = "clusters_cloud.pcd";
-    //    pcl::io::savePCDFileASCII(colored_cloud_pcd.c_str(), *colored_cloud);
-
-    //    cout << "[segmentScene] " << clusters.size() << " clusters was found\n\n";
 
     cluster_clouds.clear();
     if (clusters.size() > 0)
@@ -258,8 +224,6 @@ void segmentScene(PointCloudPtr &input)
             cloud->height = 1;
             cloud->is_dense = true;
 
-            //            cout << "[segmentScene] Cluster " << ind << " has size: " << cloud->points.size() << "\n";
-
             cluster_clouds.emplace(cluster_clouds.end(), cloud);
             ind++;
         }
@@ -270,7 +234,8 @@ void segmentScene(PointCloudPtr &input)
 
 void classifyCluster(const int &ind, PointCloudPtr &cloud)
 {
-    print_info("[classifyCluster] Cluster cloud %i has size: %d\n", ind, static_cast<int>(cloud->points.size()));
+    print_info("[classifyCluster] Cluster cloud %i has size: %d\n",
+        ind, static_cast<int>(cloud->points.size()));
 
     FeatureCloudTypePtr descriptor(new FeatureCloudType);
     CRHCloudTypePtr cluster_crh(new CRHCloudType);
@@ -278,7 +243,7 @@ void classifyCluster(const int &ind, PointCloudPtr &cloud)
 
     createHist(cloud, descriptor, cluster_crh, cluster_centroid);
 
-    //    cout << "Cluster CRH has size: " << cluster_crh->points.size() << "\n";
+    PCL_INFO("Cluster CRH has size: %d points\n", static_cast<int>(cluster_crh->points.size()));
 
     //    if(cluster_crh->points.size())
     //        print_highlight("Cluster centroid: %f %f %f\n", cluster_centroid[0], cluster_centroid[1], cluster_centroid[2]);
@@ -292,24 +257,19 @@ void classifyCluster(const int &ind, PointCloudPtr &cloud)
     vfh_model histogram;
     histogram.second = std_hist;
 
-    //    std_hist.clear();
-
-    flann::Matrix<int> k_indices;
-    flann::Matrix<float> k_distances;
+    FLANNMatrixInt k_indices;
+    FLANNMatrixFloat k_distances;
 
     nearestKSearch(*flann_index, histogram, nn_k, k_indices, k_distances);
 
-    //    histogram.second.clear();
 
     // Output the results on the screen
     print_highlight("The closest %d neighbors for cluster %d are:\n", nn_k, ind);
 
     for (int i = 0; i < nn_k; i++)
     {
-#ifndef THRESH_DISABLE
         if (apply_thresh && k_distances[0][i] > thresh)
             continue;
-#endif
         string vfh_model_path = models.at(k_indices[0][i]).first;
 
         std::vector<std::string> strs;
@@ -325,7 +285,6 @@ void classifyCluster(const int &ind, PointCloudPtr &cloud)
         model_score.score = score;
         models_scores.push_back(model_score);
 
-#ifdef ENABLE_CRH_ALIGNMENT
         if (perform_crh)
         {
             std::cout << "-------- Perform pose estimation --------------\n";
@@ -340,7 +299,8 @@ void classifyCluster(const int &ind, PointCloudPtr &cloud)
 
             loadPCDFile<PointType>(model_cloud_file.c_str(), *model_cloud);
 
-            cout << "Model cloud has size: " << model_cloud->points.size() << "\n";
+            PCL_INFO("Model cloud has %d points\n",
+                static_cast<int>(model_cloud->points.size()));
 
             // Object for storing CRHs of both
             CRHCloudTypePtr model_crh(new CRHCloudType);
@@ -362,7 +322,8 @@ void classifyCluster(const int &ind, PointCloudPtr &cloud)
             cout << "Model CRH histogram file: " << model_crh_file << "\n";
             loadPCDFile(model_crh_file, *model_crh);
 
-            cout << model_crh_file << " histogram has size: " << model_crh->points.size() << "\n";
+            PCL_INFO("%s histogram has size: %d points\n", 
+                model_crh_file, static_cast<int>(model_crh->points.size()));
 
             // read centroid from file
             model_path_ss.str("");
@@ -398,7 +359,7 @@ void classifyCluster(const int &ind, PointCloudPtr &cloud)
 
             if (roll_transforms.size() > 0)
             {
-                std::cout << "Number of object hypotheses: " << object_hypotheses_.size() << "\n";
+                PCL_INFO("Number of object hypotheses: %d\n", static_cast<int>(object_hypotheses_.size()));
 
                 //                    cout << "Resulting roll transforms:\n";
 
@@ -422,7 +383,6 @@ void classifyCluster(const int &ind, PointCloudPtr &cloud)
                 cout << "No transforms found\n";
             }
         }
-#endif
     }
 
     std::cout << "\n";
@@ -498,8 +458,6 @@ void recognize(PointCloudPtr &cloud, PointCloudPtr &cloud_filtered)
         std::cout << recognized_object << "\n";
     }
 
-#ifndef DISABLE_SINGLE_OBJECT_RECOGNITION
-
     // Find the best candidate over all the clusters
     if (models_scores.size() > 0)
     {
@@ -512,19 +470,6 @@ void recognize(PointCloudPtr &cloud, PointCloudPtr &cloud_filtered)
 
         cout << "\n\n";
 
-        // Method 1
-        //        float best_score = std::numeric_limits<float>::infinity();
-        //        index_score best_model;
-        //        for(size_t i = 0; i < models_scores.size(); i++)
-        //        {
-        //            index_score model_score = models_scores[i];
-        //            if(model_score.score < best_score){
-        //                best_model = model_score;
-        //                best_score = model_score.score;
-        //            }
-        //        }
-
-        // Method 2
         std::sort(models_scores.begin(), models_scores.end(),
                   [](const index_score &d1, const index_score &d2)
                   {
@@ -545,7 +490,6 @@ void recognize(PointCloudPtr &cloud, PointCloudPtr &cloud_filtered)
 
         found_model = best_model.model_id;
     }
-#endif
 
     // Clear data
     models_scores.clear();

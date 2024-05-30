@@ -33,6 +33,6 @@ extern string found_model;
 
 extern std::list<vfh_model> models;
 extern std::list<std::string> training_objects_ids;
-extern flann::Matrix<float> data;
+extern FLANNMatrixFloat data;
 
 #endif // COMMON_H

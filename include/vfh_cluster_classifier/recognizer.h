@@ -81,24 +81,24 @@ struct ObjectHypothesis
  * \param distances the resultant neighbor distances
  */
 inline void
-nearestKSearch(flann_distance_metric &index, const vfh_model &model,
-               int k, flann::Matrix<int> &indices, flann::Matrix<float> &distances);
+nearestKSearch(FLANNIndex& index, const vfh_model& model,
+               int k, FLANNMatrixInt& indices, FLANNMatrixFloat& distances);
 
 /** \brief Loads an n-D histogram file as a VFH signature
  * \param index the index of input cluster cloud
  * \param vfh the resultant VFH model
  */
-bool loadHist(const int &index, vfh_model &vfh);
+bool loadHist(const int& index, vfh_model& vfh);
 
-void createHist(PointCloudPtr &cloud, FeatureCloudType::Ptr &descriptor, CRHCloudTypePtr &crh_histogram, Eigen::Vector4f &centroid);
+void createHist(PointCloudPtr& cloud, FeatureCloudType::Ptr& descriptor, CRHCloudTypePtr& crh_histogram, Eigen::Vector4f& centroid);
 
-void preprocessCloud(PointCloudPtr &input, PointCloudPtr &output);
+void preprocessCloud(PointCloudPtr& input, PointCloudPtr& output);
 
-void segmentScene(PointCloudPtr &cloud);
+void segmentScene(PointCloudPtr& cloud);
 
-void classifyCluster(const int &ind, PointCloudPtr &cloud);
+void classifyCluster(const int& ind, PointCloudPtr& cloud);
 
-void recognize(PointCloudPtr &cloud, PointCloudPtr &cloud_filtered);
+void recognize(PointCloudPtr& cloud, PointCloudPtr& cloud_filtered);
 
 void clearData();
 

@@ -1,5 +1,3 @@
-// #define VFH_COMPUTE_DEBUG
-// #define DISABLE_COMPUTING_CRH
 
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
@@ -24,71 +22,20 @@ using namespace pcl::console;
 using namespace pcl::io;
 namespace fs = boost::filesystem;
 
+using utils = PersistenceUtils;
+
 bool calculate_crh(false);
 bool calculate_vfh(false);
 
-#ifndef DISABLE_COMPUTING_CRH
 // Required for saving CRH histogram to PCD file
 POINT_CLOUD_REGISTER_POINT_STRUCT(CRH90,
                                   (float[90], histogram, histogram90))
-#endif
 
 string training_dir;
 
 auto voxel_leaf_size{0.005};
 auto normal_radius{0.03};
 
-// /**
-//  * \brief Loads an n-D histogram file as a VFH signature.
-//  *
-//  * \param path - The input file name.
-//  * \param vfh - The resultant VFH signature.
-//  * \return - True if the loading is successful, false otherwise.
-//  */
-// bool loadHist(const fs::path &path, vfh_model &vfh)
-// {
-//     try
-//     {
-//         // Read the header of the PCD file
-//         pcl::PCLPointCloud2 cloud;
-//         pcl::PCDReader reader;
-//         Eigen::Vector4f origin;
-//         Eigen::Quaternionf orientation;
-//         int version;
-//         int type;
-//         unsigned int idx;
-//         reader.readHeader(path.string(), cloud, origin, orientation, version, type, idx);
-
-//         // Check if the "vfh" field exists and if the point cloud has only one point
-//         int vfh_idx = pcl::getFieldIndex(cloud, "vfh");
-//         if (vfh_idx == -1 || static_cast<int>(cloud.width) * cloud.height != 1)
-//         {
-//             return false;
-//         }
-//     }
-//     catch (const pcl::InvalidConversionException &)
-//     {
-//         return false;
-//     }
-
-//     // Load the PCD file into a point cloud
-//     FeatureCloudType point;
-//     loadPCDFile(path.string(), point);
-//     vfh.second.resize(308);
-
-//     std::vector<pcl::PCLPointField> fields;
-//     pcl::getFieldIndex(point, "vfh", fields);
-
-//     // Copy the histogram values from the loaded point cloud
-//     for (size_t i = 0; i < fields[vfh_idx].count; ++i)
-//     {
-//         vfh.second[i] = point.points[0].histogram[i];
-//     }
-
-//     // Set the file name as the first element of the VFH signature
-//     vfh.first = path.string();
-//     return true;
-// }
 
 void loadFeatureModels(const fs::path &base_dir, const std::string &extension,
                        std::vector<vfh_model> &models)
@@ -97,7 +44,8 @@ void loadFeatureModels(const fs::path &base_dir, const std::string &extension,
     if (!fs::exists(base_dir) && !fs::is_directory(base_dir))
         return;
 
-    for (fs::directory_iterator it(base_dir); it != fs::directory_iterator(); ++it)
+    fs::directory_iterator end_it();
+    for (fs::directory_iterator it(base_dir); it != end_it; ++it)
     {
         if (fs::is_directory(it->status()))
         {
@@ -106,7 +54,8 @@ void loadFeatureModels(const fs::path &base_dir, const std::string &extension,
             print_highlight("Loading %s (%lu models loaded so far).\n", ss.str().c_str(), (unsigned long)models.size());
             loadFeatureModels(it->path(), extension, models);
         }
-        if (fs::is_regular_file(it->status()) && fs::extension(it->path()) == extension)
+        if (fs::is_regular_file(it->status()) &&
+         fs::extension(it->path()) == extension)
         {
             vfh_model m;
             if (loadHist(base_dir / it->path().filename(), m))
@@ -122,12 +71,10 @@ void processCloud(PointCloudPtr &in, PointCloudPtr &out)
     pcl::removeNaNFromPointCloud(*in, *in, mapping);
 
     // Downsampling
-    pcl::VoxelGrid<PointType> vox_grid;
+    VoxelGrid vox_grid;
     vox_grid.setInputCloud(in);
     vox_grid.setLeafSize(voxel_leaf_size, voxel_leaf_size, voxel_leaf_size);
 
-    // TODO: use std::shared_ptr
-    std::shared_ptr<PointCloudType>... = std::make_shared<PointCloudType>();
     PointCloudPtr temp_cloud(new PointCloudType());
     vox_grid.filter(*temp_cloud);
 
@@ -136,14 +83,14 @@ void processCloud(PointCloudPtr &in, PointCloudPtr &out)
 
 void createFeatureModels(const fs::path &base_dir, const std::string &extension)
 {
-    cout << "[createFeatureModels] Loading files in directory: " << base_dir << "\n";
-
     if (!fs::exists(base_dir) && !fs::is_directory(base_dir))
         return;
 
-    for (fs::directory_iterator it(base_dir); it != fs::directory_iterator(); ++it)
+    fs::directory_iterator end_it();
+    for (fs::directory_iterator it(base_dir); it != end_it; ++it)
     {
-        cout << "Process " << it->path().filename() << "...\n";
+        auto file_name = (it->path().filename()).string();
+        PCL_INFO("Process %s ...\n", file_name);
         if (fs::is_directory(it->status()))
         {
             std::stringstream ss;
@@ -152,8 +99,6 @@ void createFeatureModels(const fs::path &base_dir, const std::string &extension)
             createFeatureModels(it->path(), extension);
         }
 
-        string file_name = (it->path().filename()).string();
-
         if (fs::is_regular_file(it->status()) && fs::extension(it->path()) == extension && !strstr(file_name.c_str(), "vfh") && !strstr(file_name.c_str(), "crh"))
         {
             std::vector<string> strs;
@@ -161,35 +106,34 @@ void createFeatureModels(const fs::path &base_dir, const std::string &extension)
             string view_id = strs[0];
             strs.clear();
 
-            string descr_file = PersistenceUtils::getModelDescriptorFileName(base_dir, view_id);
+            string descr_file = utils::getModelDescriptorFileName(base_dir, view_id);
 
             if (!fs::exists(descr_file))
             {
                 PointCloudPtr view(new PointCloudType());
 
-                string full_file_name = it->path().string(); // (base_dir / it->path ().filename ()).string();
-                //          string file_name = (it->path ().filename ()).string();
+                string full_file_name = it->path().string();
 
-                cout << "Compute VFH for " << full_file_name << "\n";
+                PCL_INFO("Compute VFH for %s\n", full_file_name);
 
                 loadPCDFile(full_file_name.c_str(), *view);
 
-                cout << "Cloud has " << view->points.size() << " points\n";
+                PCL_INFO("Point cloud has %d points\n", static_cast<int>(view->points.size()));
 
                 // Preprocess view cloud
                 processCloud(view, view);
 
-                cout << "Cloud has " << view->points.size() << " points after processing\n";
+                PCL_INFO("Point cloud has %d points after processing\n", static_cast<int>(view->points.size()));
 
                 NormalCloudTypePtr normals(new NormalCloudType());
                 FeatureCloudTypePtr descriptor(new FeatureCloudType);
 
                 // Estimate the normals.
-                std::shared_ptr<pcl::NormalEstimation<PointType, NormalType> > normal_estimator;
+                std::shared_ptr<NormalEstimation> normal_estimator;
                 normal_estimator->setInputCloud(view);
 
                 normal_estimator->setRadiusSearch(normal_radius);
-                pcl::search::KdTree<PointType>::Ptr kdtree(new pcl::search::KdTree<PointType>);
+                SearchTreePtr kdtree(new SearchTree);
                 normal_estimator->setSearchMethod(kdtree);
 
                 // Alternative from local pipeline
@@ -198,7 +142,7 @@ void createFeatureModels(const fs::path &base_dir, const std::string &extension)
                 normal_estimator->compute(*normals);
 
                 // VFH estimation object.
-                std::shared_ptr<pcl::VFHEstimation<PointType, NormalType, FeatureType> > vfh;
+                std::shared_ptr<FeatureEstimation> vfh;
                 vfh->setInputCloud(view->makeShared());
                 vfh->setInputNormals(normals);
                 vfh->setSearchMethod(kdtree);
@@ -211,22 +155,22 @@ void createFeatureModels(const fs::path &base_dir, const std::string &extension)
 
                 vfh->compute(*descriptor);
 
-                cout << "VFH descriptor has size: " << descriptor->points.size() << "\n";
+                PCL_INFO("VFH descriptor has size: %d\n", static_cast<int>(descriptor->points.size()));
 
                 savePCDFileBinary(descr_file.c_str(), *descriptor);
-                cout << descr_file << " was saved\n";
+                PCL_INFO("%s was saved\n", descr_file);
 
-#ifndef DISABLE_COMPUTING_CRH
                 if (calculate_crh)
                 {
-                    std::cout << "Compute CRH features ...\n";
+                    PCL_INFO("Compute CRH features ...\n");
                     // Compute the CRH histogram
-                    CRHCloudType::Ptr histogram(new CRHCloudType);
+                    CRHCloudTypePtr histogram(new CRHCloudType);
 
                     // CRH estimation object
                     CRHEstimationPtr crh;
                     crh.setInputCloud(view);
                     crh.setInputNormals(normals);
+                    
                     Eigen::Vector4f centroid4f;
                     pcl::compute3DCentroid(*view, centroid4f);
                     crh.setCentroid(centroid4f);
@@ -234,7 +178,7 @@ void createFeatureModels(const fs::path &base_dir, const std::string &extension)
                     crh.compute(*histogram);
 
                     // Save centroid to file
-                    auto centroid_file = PersistenceUtils::getCentroidFileName(base_dir, view_id);
+                    auto centroid_file = utils::getCentroidFileName(base_dir, view_id);
                     Eigen::Vector3f centroid(centroid4f[0], centroid4f[1], centroid4f[2]);
 
                     // TODO: Move to the PersistenceUtils class
@@ -247,14 +191,13 @@ void createFeatureModels(const fs::path &base_dir, const std::string &extension)
                     out << centroid[0] << " " << centroid[1] << " " << centroid[2] << std::endl;
                     out.close();
 
-                    std::cout << centroid_file << " was saved\n";
+                    PCL_INFO("%s was saved\n", centroid_file);
 
-                    auto roll_file = PersistenceUtils::getCRHDescriptorFileName(base_dir, view_id);
+                    auto roll_file = utils::getCRHDescriptorFileName(base_dir, view_id);
 
                     savePCDFileBinary(roll_file.c_str(), *histogram);
-                    cout << roll_file << " was saved\n";
+                    PCL_INFO("%s was saved\n", roll_file);
                 }
-#endif
             }
             else
             {
@@ -309,11 +252,6 @@ int main(int argc, char **argv)
 {
     parseCommandLine(argc, argv);
 
-    cout << "Calculate VFH: " << calculate_vfh << "\n";
-    cout << "Calculate CRH: " << calculate_crh << "\n";
-
-    cout << "Training dir: " << training_dir << "\n";
-
     std::string extension(".pcd");
     transform(extension.begin(), extension.end(), extension.begin(), (int (*)(int))tolower);
 
@@ -327,7 +265,7 @@ int main(int argc, char **argv)
     if (fs::exists(kdtree_idx_file_name))
     {
         if (remove(kdtree_idx_file_name.c_str()) != 0)
-            perror("Error deleting old flann index file");
+            PCL_ERROR("Error deleting old flann index file");
         else
             cout << "Old flann index file was successfully deleted\n";
     }
@@ -335,7 +273,7 @@ int main(int argc, char **argv)
     if (fs::exists(training_data_h5_file_name))
     {
         if (remove(training_data_h5_file_name.c_str()) != 0)
-            perror("Error deleting old training data file");
+            PCL_ERROR("Error deleting old training data file");
         else
             cout << "Old training data file was successfully deleted\n";
     }
@@ -343,14 +281,13 @@ int main(int argc, char **argv)
     if (calculate_vfh)
         createFeatureModels(argv[1], extension);
 
-#ifndef VFH_COMPUTE_DEBUG
     // Load the model histograms
     loadFeatureModels(argv[1], extension, models);
     print_highlight("Loaded %d VFH models. Creating training data %s/%s.\n",
                                   static_cast<int>(models.size()), training_data_h5_file_name.c_str(), training_data_list_file_name.c_str());
 
     // Convert data into FLANN format
-    flann::Matrix<float> data(new float[models.size() * models[0].second.size()], models.size(), models[0].second.size());
+    FLANNMatrix data(new float[models.size() * models[0].second.size()], models.size(), models[0].second.size());
 
     for (size_t i = 0; i < data.rows; ++i)
     {
@@ -373,13 +310,11 @@ int main(int argc, char **argv)
     models.clear();
 
     // Build the tree index and save it to disk
-    print_error("Building the kdtree index (%s) for %d elements...\n", kdtree_idx_file_name.c_str(), static_cast<int>(data.rows));
-    flann_distance_metric index(data, flann::LinearIndexParams());
-    // flann::Index<flann::ChiSquareDistance<float> > index (data, flann::KDTreeIndexParams (4));
+    PCL_ERROR("Building the kdtree index (%s) for %d elements...\n", kdtree_idx_file_name.c_str(), static_cast<int>(data.rows));
+    FLANNIndex index(data, flann::LinearIndexParams());
     index.buildIndex();
     index.save(kdtree_idx_file_name);
     delete[] data.ptr();
-#endif
 
     return (0);
 }

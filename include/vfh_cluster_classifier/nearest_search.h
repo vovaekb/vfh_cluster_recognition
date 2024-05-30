@@ -15,7 +15,7 @@ namespace fs = boost::filesystem;
  * \param vfh - The resultant VFH signature.
  * \return - True if the loading is successful, false otherwise.
  */
-bool loadHist(const fs::path &path, vfh_model &vfh)
+bool loadHist(const fs::path& path, vfh_model& vfh)
 {
     try
     {
@@ -36,7 +36,7 @@ bool loadHist(const fs::path &path, vfh_model &vfh)
             return false;
         }
     }
-    catch (const pcl::InvalidConversionException &)
+    catch (const pcl::InvalidConversionException&)
     {
         return false;
     }
@@ -90,15 +90,15 @@ void loadIndex()
  * \param distances the resultant neighbor distances
  */
 inline void
-nearestKSearch(flann_distance_metric &index, const vfh_model &model,
-               int k, flann::Matrix<int> &indices, flann::Matrix<float> &distances)
+nearestKSearch(FLANNIndex& index, const vfh_model& model,
+               int k, FLANNMatrixInt& indices, FLANNMatrixFloat& distances)
 {
     // Query point
-    flann::Matrix<float> p = flann::Matrix<float>(new float[model.second.size()], 1, model.second.size());
+    FLANNMatrixFloat p(new float[model.second.size()], 1, model.second.size());
     memcpy(&p.ptr()[0], &model.second[0], p.cols * p.rows * sizeof(float));
 
-    indices = flann::Matrix<int>(new int[k], 1, k);
-    distances = flann::Matrix<float>(new float[k], 1, k);
+    indices = FLANNMatrixInt(new int[k], 1, k);
+    distances = FLANNMatrixFloat(new float[k], 1, k);
     index.knnSearch(p, indices, distances, k, flann::SearchParams(512));
     delete[] p.ptr();
 }

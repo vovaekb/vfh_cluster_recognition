@@ -78,7 +78,7 @@ ofstream output_stream;
 // Data structures for VFH recognition
 vector<vfh_model> models;
 std::vector<std::string> training_objects_ids;
-flann::Matrix<float> data;
+FLANNMatrixFloat data;
 vfh_model histogram;
 
 /************************** Command line procedures **********************************/
