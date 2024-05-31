@@ -27,6 +27,7 @@
 
 #include <time.h>
 #include <iostream>
+#include <iterator>
 #include <vector>
 #include <fstream>
 
@@ -36,8 +37,8 @@ using namespace pcl::console;
 using namespace pcl::io;
 namespace fs = boost::filesystem;
 
-auto voxel_leaf_size{0.001};
-auto normal_radius{0.03};
+constexpr auto voxel_leaf_size = 0.001f;
+constexpr auto normal_radius = 0.03f;
 
 std::vector<index_score> models_scores;
 vector<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis>> object_hypotheses_;
@@ -251,8 +252,8 @@ void classifyCluster(const int &ind, PointCloudPtr &cloud)
     print_highlight("Preparing data for K search ...\n");
 
     float *hist = descriptor->points[0].histogram;
-    int size_feat = sizeof(descriptor->points[0].histogram) / sizeof(float);
-    std::vector<float> std_hist(hist, hist + size_feat);
+    auto size_feat = std::size(descriptor->points[0].histogram);
+    std::vector<float> std_hist(hist, hist + static_cast<int>(size_feat));
 
     vfh_model histogram;
     histogram.second = std_hist;
@@ -445,7 +446,7 @@ void recognize(PointCloudPtr &cloud, PointCloudPtr &cloud_filtered)
         {
             if (model_score.model_id == training_object)
             {
-                recognized_objects.push_back(model_score.model_id);
+                recognized_objects.emplace_back(model_score.model_id);
                 break;
             }
         }

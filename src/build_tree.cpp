@@ -51,7 +51,7 @@ void loadFeatureModels(const fs::path &base_dir, const std::string &extension,
         {
             std::stringstream ss;
             ss << it->path();
-            print_highlight("Loading %s (%lu models loaded so far).\n", ss.str().c_str(), (unsigned long)models.size());
+            print_highlight("Loading %s (%lu models loaded so far).\n", ss.str().c_str(), static_cast<unsigned long>(models.size()));
             loadFeatureModels(it->path(), extension, models);
         }
         if (fs::is_regular_file(it->status()) &&

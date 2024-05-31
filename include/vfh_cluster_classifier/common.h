@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <list>
+#include <vector>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/features/vfh.h>
@@ -27,12 +27,12 @@ extern string test_scenes_dir;
 extern string test_scene;
 extern string scene_name;
 
-extern std::list<PointCloudPtr> cluster_clouds;
-extern std::list<std::string> recognized_objects;
+extern std::vector<PointCloudPtr> cluster_clouds;
+extern std::vector<std::string> recognized_objects;
 extern string found_model;
 
-extern std::list<vfh_model> models;
-extern std::list<std::string> training_objects_ids;
+extern std::vector<vfh_model> models;
+extern std::vector<std::string> training_objects_ids;
 extern FLANNMatrixFloat data;
 
 #endif // COMMON_H

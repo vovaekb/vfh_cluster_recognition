@@ -172,7 +172,7 @@ void getTrainingObjectsIds(const fs::path &base_dir)
             string object_name = (it->path().filename()).string();
 
             std::cout << "Storing object " << object_name << "\n";
-            training_objects_ids.push_back(object_name);
+            training_objects_ids.emplace_back(object_name);
         }
     }
 }
